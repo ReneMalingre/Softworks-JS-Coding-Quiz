@@ -28,6 +28,144 @@
   p, h1, h2, h3, h4, h5, h6 {
     overflow-wrap: break-word;
   }
-
-
   
+  /* ---- End Standard CSS Resets ---- */
+
+  /* ---------- Standard Element Styling ---------- */
+  section {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    min-width: 300px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .page-element{
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border: black solid 2px;
+    border-radius: 10px;
+    padding: 1rem 2rem;
+    background-color: lightblue;
+    width: 100%;
+    margin-top: 1rem;
+  }
+  
+  /* --------- Start Page ----------- */
+  #start-page {
+    display: block;
+  }
+
+  #start-intro {
+   
+  }
+
+#start-high-scores{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border: black solid 2px;
+  border-radius: 10px;
+  padding: 1rem 2rem;
+  background-color: lightblue;
+  align-self: stretch;
+  margin-top: 1rem;
+}
+
+#start-high-scores p{
+  text-align: center;
+}
+
+  /* --------- End Start Page ----------- */
+
+
+  /* --------- Quiz Page ----------- */
+  #quiz-page {
+    display: none;
+  }
+  
+  #quiz-feedback{
+    border-top: #7ec0ee solid 2px;
+    align-self: stretch;
+    text-align: left;
+    margin-top: 1rem;
+    padding-top: 0.5rem;
+  }
+
+  /* --------- Progress Circle ----------- */
+  .progress-circle {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    border: 2px solid #e5e5e5;
+    margin: 0 auto;
+  }
+  
+  .progress {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    clip: rect(0, 50px, 100px, 0);
+    background: #7ec0ee;
+    transform: rotate(90deg);
+    transform-origin: center center;
+  }
+  
+  .progress[data-percentage="25"] {
+    clip: rect(0, 25px, 100px, 0);
+  }
+  
+  .progress[data-percentage="50"] {
+    clip: rect(0, 50px, 100px, 0);
+  }
+  
+  .progress[data-percentage="75"] {
+    clip: rect(0, 75px, 100px, 0);
+  }
+  
+  .progress[data-percentage="100"] {
+    clip: rect(0, 100px, 100px, 0);
+  }
+  
+
+  #progress-percentage {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 24px;
+    font-weight: bold;
+  }
+
+  .quiz-answer{
+    font-size: 1.5rem;
+  }
+
+  .quiz-answer:hover{
+    background-color: yellow !important;
+    cursor: pointer;
+  }
+
+  /* --------- End Quiz Page ----------- */
+
+  /* --------- End Page ---------------- */
+  #quiz-over-page {
+    display: none;
+  }
+
+  /* --------- End End Page ----------- */
+
+  /* --------- High Score Page ---------------- */
+  #high-score-page {
+   display: none;
+  }
