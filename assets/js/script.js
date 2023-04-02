@@ -1,37 +1,31 @@
 // JavaScript Coding Quiz
 
-// set the number of seconds per question and the penalty for a wrong answer
-const secondsPerQuestion = 10;
-const secondsPenalty = 10;
-
+// ---------- Event Listeners ----------
+// Detect if the user has clicked on the start button to start the quiz
 var startQuizButton=document.getElementById('start-button');
-startQuizButton.addEventListener('click', startQuiz);
+startQuizButton.addEventListener('click', startTheCodingQuiz);
 
-// create an element to receive events from the quiz timer
+// create custom events that are dispatched from the quiz timer and quiz controller
+// notifying that the quiz has finished for further actions to be taken
 const TimerFinishedEvent = new Event('quizTimerFinished');
-const TimerTickEvent = new Event('quizTimerTick');
 const EndedQuestionsEvent = new Event('quizEndedQuestions');
-
 document.addEventListener('quizTimerFinished', quizTimerFinished);
-document.addEventListener('quizTimerTick', quizTimerTick);
 document.addEventListener('quizEndedQuestions', quizEndedQuestions);
 
+// add event listeners for custom events
+// this one is used to update the timer display from the quiz timer
+document.addEventListener('quizTimerTick', quizTimerTickHandler);
+// this one is used to update the quiz progress bar when the user answers a question
+document.addEventListener('quizQuestionAnswered', quizQuestionAnsweredHandler);
+
+// Detect if the user has clicked on the quiz answers with their mouse
 var answerDivs = document.getElementById('quiz-answers');
 answerDivs.addEventListener('click', answerSelected);
-const rootDirectory = location.origin;
 
-console.log('The root directory is:', rootDirectory);
+// Detect if the user has pressed (released) a key on the keyboard 
+// to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
+document.addEventListener('keyup', quizKeyUp);
 
-function answerSelected() {
-  console.log(event.target.nodeName);
-  if (event.target.nodeName === 'P') {
-    const answerID=event.target.id;
-    const answerIdentifier=answerID.substring(answerID.length - 1).toUpperCase();
-    console.log(answerIdentifier);
-    quizController.answerQuestion(answerIdentifier);
-  }
-  return;
-};
 
 // ----------  Class Definitions
 // ----------  QuizController Class
@@ -47,11 +41,15 @@ class QuizController {
     this.currentQuestionIndex = 0;
     this.questions = new QuizQuestions();
     this.quizIsRunning = false;
+    this.showCorrectAnswer = false;
   }
 
   startQuiz() {
   // reset the quiz, including loading/reloading the inbuilt questions
     this.resetQuiz();
+
+    // update the progress bar
+    this.raiseEventQuestionAnswered();
 
     // calculate the time remaining based on the number of questions and the time per question
     this.quizTotalTime = this.timePerQuestion * this.questions.questions.length;
@@ -65,7 +63,7 @@ class QuizController {
     let quizAnswer;
     for (const answerID of answerIDs) {
       quizAnswer=question.answers.getAnswerByIdentifier(answerID);
-      document.getElementById('answer-' + answerID.toLowerCase()).innerHTML = answerID + ' ' + quizAnswer.answer;
+      document.getElementById('answer-' + answerID.toLowerCase()).textContent = answerID + ' ' + quizAnswer.answer;
     }
     return;
   }
@@ -76,24 +74,45 @@ class QuizController {
       console.log(this.currentQuestionIndex);
       const displayedQuestion = this.currentQuestion();
       displayedQuestion.storeAnswerByIdentifier(answerIdentifier);
-      // check if the answer is correct
+
+      // check if the answer is correct and feedback
+      const feedbackElement = document.getElementById('quiz-feedback');
       if (displayedQuestion.userSelection.isCorrect) {
         // if so, let the user know
-        document.getElementById('quiz-feedback').innerHTML = 'Correct!';
+        feedbackElement.innerHTML = 'Correct!';
+        feedbackElement.style.color = 'green';
+        feedbackElement.style.fontWeight = '500';
       } else {
         // if not, let the user know and penalise them
-        document.getElementById('quiz-feedback').innerHTML = 'Incorrect!' + ' The correct answer is ' + displayedQuestion.getCorrectAnswer().answer;
+        const answerFeedback = 'Incorrect!' + (this.showCorrectAnswer ? ' The correct answer was: "' + displayedQuestion.getCorrectAnswer().answer + '"' : '');
+        feedbackElement.innerHTML = answerFeedback;
+        feedbackElement.style.color = 'red';
+        feedbackElement.style.fontWeight = '600';
         quizTimer.penaliseForWrongAnswer(secondsPenalty);
       };
       // move to the next question
       this.currentQuestionIndex++;
+
       if (this.currentQuestionIndex > this.questions.questions.length-1) {
         // end the quiz as have run out of questions
         document.dispatchEvent(EndedQuestionsEvent);
       } else {
         this.showQuestion();
+        // update the progress bar if there are more questions
+        this.raiseEventQuestionAnswered();
       };
     }
+  }
+
+  raiseEventQuestionAnswered() {
+    const eventQuestionAnswered = new CustomEvent('quizQuestionAnswered',
+        {detail: {
+          totalQuestions: this.questions.questions.length,
+          questionsAsked: this.currentQuestionIndex + 1,
+        },
+        });
+    document.dispatchEvent(eventQuestionAnswered);
+    return;
   }
 
   currentQuestion() {
@@ -134,6 +153,30 @@ class QuizController {
     this.loadInbuiltQuestions();
     this.quizIsRunning = true;
     return;
+  }
+
+  validateKeyPress(keyPressCharacter) {
+    // check if the key pressed is a valid key to answer the question
+    console.log('The key pressed was:', keyPressCharacter);
+    keyPressCharacter = keyPressCharacter.toLowerCase();
+    const keyTranslationPairs = [
+      ['a', 'A'],
+      ['b', 'B'],
+      ['c', 'C'],
+      ['d', 'D'],
+      ['1', 'A'],
+      ['2', 'B'],
+      ['3', 'C'],
+      ['4', 'D'],
+    ];
+    let returnKey = '';
+    for (const keyTranslationPair of keyTranslationPairs) {
+      if (keyPressCharacter === keyTranslationPair[0]) {
+        returnKey = keyTranslationPair[1];
+        break;
+      }
+    }
+    return returnKey;
   }
 
   /**
@@ -385,7 +428,6 @@ class QuizController {
   }
 }
 
-
 // ----------  QuizQuestion Class
 /**
  * Represents a Quiz Question with a question, a collection of answers and the correct answer
@@ -453,7 +495,6 @@ class QuizQuestion {
   getCorrectAnswer() {
     return this.answers.answers.find((answer) => answer.isCorrect);
   }
-
 }
 
 // ----------  QuizQuestions Class
@@ -541,7 +582,6 @@ class QuestionAnswers {
    * @return {null} - if the question is not found or the identifier is not valid
    */
   getAnswerByIdentifier(identifier) {
-    console.log(this.answers);
     for (let i = 0; i < this.answers.length; i++) {
       if (this.answers[i].identifier === identifier) {
         return this.answers[i];
@@ -576,6 +616,7 @@ class QuizTimer {
     this.timerInterval = 1000;
     this.timeLeft= 0;
     this.quizTimer = null;
+    this.startingTime = 0;
   }
 
   getSecondsLeft() {
@@ -592,37 +633,50 @@ class QuizTimer {
     this.timeLeft -= penalty;
     if (this.timeLeft <= 0) {
       // stop the timer
-      this.stop();
+      this.stopQuizTimer();
       // raise the timer run out event
       document.dispatchEvent(TimerFinishedEvent);
     } else {
       // raise the timer tick event to refresh screen, etc
-      document.dispatchEvent(TimerTickEvent);
+      this.raiseEventTimerTick();
     }
   }
 
-  start(runForSeconds) {
+  raiseEventTimerTick() {
+    const timerTickEvent = new CustomEvent('quizTimerTick',
+        {detail: {
+          timeLeft: this.timeLeft,
+          startingTime: this.startingTime,
+        },
+        });
+    document.dispatchEvent(timerTickEvent);
+    return;
+  }
+
+  startQuizTimer(runForSeconds) {
+    this.startingTime=runForSeconds;
     this.timeLeft = runForSeconds;
-    console.log(`Starting timer for ${this.timeLeft} seconds`);
+    // update the UI at the start of the timer
+    this.raiseEventTimerTick();
+
     // start the timer and set the function to run every interval defined by this.timerInterval
     this.quizTimer = setInterval(() => {
       this.timeLeft--;
       if (this.timeLeft <= 0) {
         // stop the timer
-        this.stop();
+        this.stopQuizTimer();
         // raise the timer run out event
         console.log('Timer finished');
         document.dispatchEvent(TimerFinishedEvent);
       } else {
-        // raise the timer tick event to refresh screen, etc
-        console.log('Timer tick' + this.timeLeft );
-        document.dispatchEvent(TimerTickEvent);
+        // raise the timer tick event to refresh progress bar, etc
+        this.raiseEventTimerTick();
       }
     }, this.timerInterval);
     return;
   }
 
-  stop() {
+  stopQuizTimer() {
     clearInterval(this.quizTimer);
   }
 }
@@ -631,64 +685,64 @@ class QuizTimer {
 
 // ---------------------------------------------------------
 // ================ MAIN CODE ==============================
+// The quiz is controlled by the QuizController class that contains the
+// questions and records the score, and determines if the quiz is finished
+// if the user has answered all of the questions
+// The QuizTimer class is used to control the timer for the quiz, and it
+// determines if the quiz is finished if the timer runs out
+// Both the QuizController and QuizTimer classes raise custom events that are
+// handled by the event handlers in the main code to update the UI
+
+// set the number of seconds per question and the penalty that reduces the time available
+// if the user selects an incorrect answer
+const secondsPerQuestion = 8;
+const secondsPenalty = 10;
+
 // create a new quiz timer with the quizTimerElement to dispatch events to
 const quizTimer = new QuizTimer();
-
 
 // create a new quiz controller that has all the quiz questions and rules
 const quizController = new QuizController(secondsPerQuestion);
 
-function startQuiz() {
+// This function starts the quiz, and it is called by the user clicking the "Start Quz" button
+function startTheCodingQuiz() {
+  // get the user options
+  // see if user wants the correct answer to be shown if they get it wrong
+  quizController.showCorrectAnswer= document.getElementById('show-correct-answer').checked;
+
+  // ensure the UI for the answers is reset
+  resetAnswerElements('block');
+
   // start the quiz
   console.log('start quiz');
   quizController.startQuiz();
 
   // start the timer
-  console.log('start timer');
-  quizTimer.start(quizController.quizTotalTime);
+  // console.log('start timer');
+  quizTimer.startQuizTimer(quizController.quizTotalTime);
 
   // hide the start page
   document.getElementById('start-page').style.display = 'none';
 
-  // show the quiz page
-  document.getElementById('progress-percentage').innerHTML = quizController.quizTotalTime;
   document.getElementById('quiz-page').style.display = 'block';
 
   // show the first question
   quizController.showQuestion();
 }
 
-async function quizTimerFinished() {
-  // end the quiz
-  stopQuiz();
-  document.getElementById('progress-percentage').innerHTML = 'time\'s up!';
 
-  // wait a second before showing the finished page
-  await delay(1000);
 
-  // show the quiz finished page
-  showFinishedPage();
-}
-
-async function quizEndedQuestions() {
-  // end the quiz
-  stopQuiz();
-  // show a message that the quiz has ended
-  document.getElementById('progress-percentage').innerHTML = 'All done!';
-  // delay to show the result of the last answer
-  await delay(2000);
-  // show the quiz finished page
-  showFinishedPage();
-}
-
+// this is a helper function to tell the QuizController and the QuizTimer that the quiz has ended
+// either by running out of questions or the timer running out
 function stopQuiz() {
   // end the quiz:
   // disallow any more answers
   // stop the timer
   quizController.endQuiz();
-  quizTimer.stop();
+  quizTimer.stopQuizTimer();
 }
 
+// this is a helper function to move to webpage to the next step, which is the finished quiz page
 function showFinishedPage() {
   // show the quiz finished page
   document.getElementById('quiz-page').style.display = 'none';
@@ -697,42 +751,117 @@ function showFinishedPage() {
   document.getElementById('final-score').innerHTML = quizController.userScore();
 }
 
-function quizTimerTick() {
-  // update the timer display
-  document.getElementById('progress-percentage').innerHTML = quizTimer.timeLeft;
+
+// tidy up the UI after the last question has been answered
+// and before the quiz has started to ensure no old data or unwanted formatting is shown
+function resetAnswerElements(displayType) {
+  const answerDiv = document.getElementById('quiz-answers');
+  const answerElements = answerDiv.querySelectorAll('p');
+  answerElements.forEach((answerElement) => {
+    answerElement.style.display = displayType;
+    answerElement.textContent = '';
+  });
 }
 
-// ----------  End Start Page
-// ---------------------------------------------------------
 
-// ---------------------------------------------------------
-// ----------  Quiz Page
-// ----------  End Quiz Page
-// ---------------------------------------------------------
+// ---------- Event Handlers ----------
+// this is called when the user clicks on an answer
+// (actually triggered by the container div for the answer, using bubbling)
+function answerSelected(event) {;
+  // only respond if the user clicks one of the answers (<p> elements)
+  if (event.target.nodeName === 'P') {
+    // get the id of the element
+    const answerID = event.target.id;
+    // get the last character of the id, which is the answer identifier (a, b, c, d)
+    const answerIdentifier=answerID.substring(answerID.length - 1).toUpperCase();
+    // pass the answer identifier to the quiz controller to process the answer selected
+    quizController.answerQuestion(answerIdentifier);
+  }
+  return;
+};
 
-// ---------------------------------------------------------
-// ----------  Quiz Finished Page
-// ----------  End Quiz Finished Page
-// ---------------------------------------------------------
+// this is called when the user releases a key on the keyboard,
+// to allow them to use the keyboard to answer
+function quizKeyUp(event) {
+  // only respond if the quiz is actually running
+  if (quizController.quizIsRunning) {
+    // check if the key pressed is a valid answer (eg A, B, C, D, a, b, c, d, 1, 2, 3, 4)
+    const validKey = quizController.validateKeyPress(event.key);
+    if (validKey) {
+      // pass the answer identifier to the quiz controller to process the answer selected
+      quizController.answerQuestion(validKey);
+    };
+  }
+  return;
+}
 
-// ---------------------------------------------------------
-// ----------  High Scores Page
-// ----------  End High Scores Page
-// ---------------------------------------------------------
 
-// ---------------------------------------------------------
-// ----------  Initialise Variables
+// ---------- Custom Event Handlers ----------
+// This event handles the custom event dispatched by the QuizTimer when the quiz has ended due to running out of time
+// async is used to allow the quiz to wait for a delay before showing the finished page
+async function quizTimerFinished() {
+  // end the quiz
+  stopQuiz();
+  document.getElementById('timer').innerHTML = 'time\'s up!';
 
+  // wait a second before showing the finished page
+  await delay(1000);
+
+  // show the quiz finished page
+  showFinishedPage();
+}
+// This event handles the custom event dispatched by the QuizController when the quiz has ended due to running out of questions
+// async is used to allow the quiz to wait for a delay before showing the finished page
+async function quizEndedQuestions() {
+  // end the quiz
+  stopQuiz();
+
+  // clear the questions display after the last question
+  document.getElementById('questions-left').textContent = 'all questions answered';
+
+  document.getElementById('question').textContent = '';
+  resetAnswerElements('none');
+
+  // show a message that the quiz has ended
+  document.getElementById('timer').innerHTML = 'All done!';
+
+  // delay to show the result of the last answer
+  await delay(2000);
+
+  // show the quiz finished page
+  showFinishedPage();
+}
+
+// handles the dispatched event from the quiz countdown timer
+function quizTimerTickHandler(event) {
+  // get the details of the event
+  const timeLeft = parseFloat(event.detail.timeLeft);
+  const startingTime = parseFloat(event.detail.startingTime);
+  // calculate the percentage of time left
+  const percentageLeft = Math.round(((startingTime- timeLeft)/startingTime)*100);
+  // update the timer display
+  document.getElementById('timer').innerHTML = quizTimer.timeLeft;
+  // update the timer progress bar
+  setTimeProgressBar(percentageLeft);
+}
+
+function quizQuestionAnsweredHandler(event) {
+  // get the details of the event
+  const questionTally = parseFloat( event.detail.totalQuestions);
+  const questionsAsked = parseFloat( event.detail.questionsAsked);
+  // calculate the percentage of questions left to be answered
+  const percentageDone = Math.round((questionsAsked / questionTally)*100);
+  // update the question progress info
+  document.getElementById('question-number').innerHTML = `${questionsAsked} of ${questionTally}`;
+  document.getElementById('questions-left').innerHTML = `${questionTally - questionsAsked}`;
+  // update the progress bar
+  setQuestionProgressBar(percentageDone);
+}
+// ---------- End of Custom Event Handlers ----------
+
+// ---------- localStorage Functions
 // See if localStorage is available to use
 const useLocalStorage = storageAvailable('localStorage');
-
-// store questions and answers in this variable
-
-// ----------  End Initialise Variables
-// ---------------------------------------------------------
-
-// ---------------------------------------------------------
-// ----------  localStorage Functions
 
 // see if the storage type is supported and available
 // credit: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
@@ -762,16 +891,77 @@ function storageAvailable(type) {
     );
   }
 }
-// ----------  End localStorage Functions
-// ---------------------------------------------------------
+// ----------  End of localStorage Functions
 
-// ---------------------------------------------------------
-
-// ---------------------------------------------------------
-
+// ---------- Helper functions ----------
 function delay(milliseconds) {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
 }
+// ---------- End of Helper functions ----------
 
+// ---------- Progress Bar Functions
+function setTimeProgressBar(timerPercentage) {
+  // ensure the percentage is between 0 and 100
+  timerPercentage=parseFloat(timerPercentage);
+  if (timerPercentage > 100) {
+    timerPercentage = 100;
+  } else if (timerPercentage < 0) {
+    timerPercentage = 0;
+  }
+
+  // calculate the colour of the progress bar based on the percentage
+  const red = 255;
+  const green = (100-timerPercentage) * 2.3;
+  const blue = 0;
+  const endBarColour = 'rgb(' + red + ',' + green + ',' + blue + ')';
+  const shadowStyle = '1px 1px 8px 0 rgba(' + red + ',' + green + ',' + blue + ', 0.75)';
+  const startBarColour = 'rgb(255 230 0)';
+  const countTextColour = endBarColour;
+
+  // format the progress bar with the calculated colour and percentage
+  setProgressBar('timer-bar', 'timer-bar-outline', 'timer', timerPercentage, startBarColour, endBarColour, countTextColour, shadowStyle);
+
+  return;
+}
+
+function setQuestionProgressBar(questionPercentage) {
+  // ensure the percentage is between 0 and 100
+  questionPercentage=parseFloat(questionPercentage);
+  if (questionPercentage > 100) {
+    questionPercentage = 100;
+  } else if (questionPercentage < 0) {
+    questionPercentage = 0;
+  }
+
+  // calculate the colour of the progress bar based on the percentage
+  const red = 0 + ((100-questionPercentage)/100) * (171 - 0);
+  const green = 61 + ((100-questionPercentage)/100) * (171 - 61);
+  const blue = 107 + ((100-questionPercentage)/100) * (232 - 107);
+  const endBarColour = 'rgb(' + red + ',' + green + ',' + blue + ')';
+  const shadowStyle = '1px 1px 10px 0 rgba(98 171 232 / 75%)';
+  const startBarColour = 'rgb(98 171 232)';
+  const countTextColour = startBarColour;
+  // format the progress bar with the calculated colour and percentage
+  setProgressBar('questions-bar', 'questions-bar-outline', 'questions-left', questionPercentage, startBarColour, endBarColour, countTextColour, shadowStyle);
+  return;
+}
+
+function setProgressBar(elementID, elementParentID, countDownTextID, countDownPercentage, startBarColour, endBarColour, countTextColour, shadowStyle) {
+  let elementToStyle = document.getElementById(elementID);
+  elementToStyle.style.backgroundColor = endBarColour;
+  elementToStyle.style.background ='linear-gradient(to right, ' + startBarColour + ' 0%, ' + endBarColour + ' 100%)';
+  // set its width to the calculated percentage
+  elementToStyle.style.width = countDownPercentage + '%';
+
+  // set the shadow of the timer bar to the calculated colour
+  elementToStyle = document.getElementById(elementParentID);
+  elementToStyle.style.boxShadow=shadowStyle;
+
+  // set the colour of the timer text
+  elementToStyle = document.getElementById(countDownTextID);
+  elementToStyle.style.color=countTextColour;
+  return;
+}
+// ---------- End of Progress Bar Functions

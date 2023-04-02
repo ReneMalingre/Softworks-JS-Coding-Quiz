@@ -1,171 +1,219 @@
 /* Standard CSS Resets */
 
 /*  Use  box-sizing model, reset margins and padding */
-*, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  
-  /* allow percentage-based heights, use standard font-size to word in rems */
-  html, body {
-    height: 100%;
-    font-size: 16px;
-  }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-  /* Improve media defaults  */
-  img, picture, video, canvas, svg {
-    display: block;
-    max-width: 100%;
-  }
+:root {
+  --window-background-color: #333;
+  --default-text-color: #333;
+  --page-background-color: lightblue;
+  --quiz-text-color: #333;
+  --quiz-answer-background-color: rgb(98 171 232);
+  --page-element-shadow: 2px 2px 10px 0 rgba(255 255 255 / 50%);
+  --accent-color-1: rgb(0 61 107);
+}
 
-  /* Remove built-in form typography styles  */
-  input, button, textarea, select {
-    font: inherit;
-  }
-  
-  /* Avoid text overflows  */
-  p, h1, h2, h3, h4, h5, h6 {
-    overflow-wrap: break-word;
-  }
-  
-  /* ---- End Standard CSS Resets ---- */
+/* allow percentage-based heights, use standard font-size to word in rems */
+html,
+body {
+  height: 100%;
+  font-size: 16px;
+  background-color: var(--window-background-color);
+  color: var(--default-text-color);
+}
 
-  /* ---------- Standard Element Styling ---------- */
-  section {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    min-width: 300px;
-    max-width: 800px;
-    margin: 0 auto;
-  }
+body {
+  font-family: Montserrat, "Open Sans", sans-serif;
+}
 
-  .page-element{
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    border: black solid 2px;
-    border-radius: 10px;
-    padding: 1rem 2rem;
-    background-color: lightblue;
-    width: 100%;
-    margin-top: 1rem;
-  }
-  
-  /* --------- Start Page ----------- */
-  #start-page {
-    display: block;
-  }
+/* Improve media defaults  */
+img,
+picture,
+video,
+canvas,
+svg {
+  display: block;
+  max-width: 100%;
+}
 
-  #start-intro {
-   
-  }
+/* Remove built-in form typography styles  */
+input,
+button,
+textarea,
+select {
+  font: inherit;
+}
 
-#start-high-scores{
+/* Avoid text overflows  */
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  overflow-wrap: break-word;
+}
+
+/* ---- End Standard CSS Resets ---- */
+
+/* ---------- Standard Element Styling ---------- */
+section {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: black solid 2px;
-  border-radius: 10px;
-  padding: 1rem 2rem;
-  background-color: lightblue;
-  align-self: stretch;
-  margin-top: 1rem;
+  height: 100%;
+  min-width: 300px;
+  max-width: 800px;
+  margin: 0 auto;
 }
 
-#start-high-scores p{
+.page-element {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: 20px;
+  padding: 1rem 2rem;
+  background-color: var(--page-background-color);
+  width: 100%;
+  margin-top: 1rem;
+  box-shadow: var(--page-element-shadow);
+}
+
+/* --------- Start Page ----------- */
+#start-page {
+  display: block;
+}
+
+#start-intro p {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 1rem 0;
+}
+
+#start-intro label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin: 1rem 0;
+}
+
+#show-correct-answer {
+  background: var(--page-background-color);
+  accent-color: var(--page-background-color);
+  margin-right: -1.25em;
+}
+
+#start-high-scores p {
   text-align: center;
 }
 
-  /* --------- End Start Page ----------- */
+button {
+  font-size: 1.1rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  border: none;
+  background-color: #333;
+  color: #fff;
+  margin: 1rem 0;
+}
 
+/* --------- End of Start Page ----------- */
 
-  /* --------- Quiz Page ----------- */
-  #quiz-page {
-    display: none;
-  }
-  
-  #quiz-feedback{
-    border-top: #7ec0ee solid 2px;
-    align-self: stretch;
-    text-align: left;
-    margin-top: 1rem;
-    padding-top: 0.5rem;
-  }
+/* --------- Quiz Page ----------- */
+#quiz-page {
+  display: none;
+}
 
-  /* --------- Progress Circle ----------- */
-  .progress-circle {
-    position: relative;
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    border: 2px solid #e5e5e5;
-    margin: 0 auto;
-  }
-  
-  .progress {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 50%;
-    clip: rect(0, 50px, 100px, 0);
-    background: #7ec0ee;
-    transform: rotate(90deg);
-    transform-origin: center center;
-  }
-  
-  .progress[data-percentage="25"] {
-    clip: rect(0, 25px, 100px, 0);
-  }
-  
-  .progress[data-percentage="50"] {
-    clip: rect(0, 50px, 100px, 0);
-  }
-  
-  .progress[data-percentage="75"] {
-    clip: rect(0, 75px, 100px, 0);
-  }
-  
-  .progress[data-percentage="100"] {
-    clip: rect(0, 100px, 100px, 0);
-  }
-  
+#quiz-question {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  width: 80%;
+}
 
-  #progress-percentage {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 24px;
-    font-weight: bold;
-  }
+#quiz-question h2 {
+  font-size: 1.3rem;
+  font-weight: 500;
+}
 
-  .quiz-answer{
-    font-size: 1.5rem;
-  }
+#question {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0.6rem 0;
+}
 
-  .quiz-answer:hover{
-    background-color: yellow !important;
-    cursor: pointer;
-  }
+.quiz-answer {
+  font-size: 1.2rem;
+  background-color: white;
+  margin: 0.25rem 1rem;
+  padding: 0.2rem 1rem;
+  border-radius: 20px;
+}
 
-  /* --------- End Quiz Page ----------- */
+.quiz-answer:hover {
+  background-color: var(--quiz-answer-background-color) !important;
+  cursor: pointer;
+}
 
-  /* --------- End Page ---------------- */
-  #quiz-over-page {
-    display: none;
-  }
+#quiz-feedback {
+  border-top: var(--quiz-answer-background-color) solid 2px;
+  align-self: stretch;
+  text-align: left;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
 
-  /* --------- End End Page ----------- */
+/* --------- End Quiz Page ----------- */
 
-  /* --------- High Score Page ---------------- */
-  #high-score-page {
-   display: none;
-  }
+/* --------- End Page ---------------- */
+#quiz-over-page {
+  display: block;
+}
+
+#quiz-over-page h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--accent-color-1);
+}
+
+#quiz-over-page p,
+#final-score {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 1rem 0;
+}
+
+#high-score-form {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  gap: 1rem;
+  align-items: center;
+  width: 80%;
+}
+
+input{
+  width:5em;
+  border-color: var(--default-text-color);
+  outline: none;
+  text-transform: uppercase;
+}
+
+/* --------- End End Page ----------- */
+
+/* --------- High Score Page ---------------- */
+#high-score-page {
+  display: none;
+}

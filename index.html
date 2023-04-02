@@ -7,11 +7,18 @@
     <title>JavaScript Coding Quiz</title>
     <meta
       name="description"
-      content="A Coding Quiz Challenge to test JavaScript fundamentals"
-    />
+      content="A Coding Quiz Challenge to test JavaScript fundamentals"/>
+
+    <!-- Google Fonts -->
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600;1,700&display=swap" rel="stylesheet">
+    
+    <!-- CSS Stylesheets -->
     <!----  normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css
         normalize styles to standard values across browsers -->
     <link rel="stylesheet" href="./assets/css/normalize.css" />
+    <link rel="stylesheet" href="./assets/css/progress.css" />
     <link rel="stylesheet" href="./assets/css/style.css" />
   </head>
   <body>
@@ -26,6 +33,10 @@
             limit. Keep in mind that incorrect answers will penalise your score
             time by ten seconds!
           </p>
+          <label>
+            <input type="checkbox" name="show-correct-answer" value="yes" checked id="show-correct-answer">
+            Show correct answers if I get them wrong
+          </label>
           <button id="start-button">Start Quiz</button>
         </div>
         <div class="page-element" id="start-high-scores">
@@ -40,21 +51,30 @@
       <!-- This section is the quiz area while it is running -->
       <section id="quiz-page">
         <div class="page-element">
+          <h1>Coding Quiz Challenge</h1>
           <!-- progress indicator, timer display -->
-          <div class="progress-circle">
-            <div class="progress" data-percentage="100"></div>
-            <div id="progress-percentage">60%</div>
+          <div class="progress-bars">
+            <p>Time Left: <span id="timer"></span></p>
+            <div class="progress-bar" id="timer-bar-outline">
+              <div id="timer-bar"></div>
+            </div>
+            <p>Questions Left: <span id="questions-left"></span></p>
+            <div class="progress-bar" id="questions-bar-outline">
+              <div id="questions-bar"></div>
+            </div>
           </div>
-          <!-- quiz page header -->
-          <h2>Question <span id="question-number"></span></h2>
-          <!-- display the question here -->
-          <p id="question"></p>
-          <!-- display the answer choices here -->
-          <div id="quiz-answers">
-            <p class="quiz-answer" id="answer-a"></p>
-            <p class="quiz-answer" id="answer-b"></p>
-            <p class="quiz-answer" id="answer-c"></p>
-            <p class="quiz-answer" id="answer-d"></p>
+          <!-- question display -->
+          <div id="quiz-question">
+            <h2>Question <span id="question-number"></span></h2>
+            <!-- display the question here -->
+            <p id="question"></p>
+            <!-- display the answer choices here -->
+            <div id="quiz-answers">
+              <p class="quiz-answer" id="answer-a"></p>
+              <p class="quiz-answer" id="answer-b"></p>
+              <p class="quiz-answer" id="answer-c"></p>
+              <p class="quiz-answer" id="answer-d"></p>
+            </div>
           </div>
           <!-- show correct or incorrect -->
           <div id="quiz-feedback"></div>
@@ -65,11 +85,12 @@
       <!-- This section is the end quiz page -->
       <section id="quiz-over-page">
         <div class="page-element">
+        <h1>Coding Quiz Challenge</h1>
         <h2>All done!</h2>
-        <p>Your final score is <span id="final-score"></span></p>
+        <p>Congratulations! Your final score is <span id="final-score"></span></p>
         <form id="high-score-form">
           <label for="initials">Enter your initials:</label>
-          <input type="text" id="initials" name="initials" />
+          <input type="text" id="initials" name="initials" id="enter-initials" />
           <button type="submit">Submit</button>
         </form>
       </div>
@@ -79,10 +100,11 @@
       <!-- This section is the high score page -->
       <section id="high-score-page">
         <div class="page-element">
-        <h2>High Scores</h2>
-        <div id="high-score-list"></div>
-        <button id="go-back">Go Back</button>
-        <button id="clear-high-scores">Clear High Scores</button>
+          <h1>Coding Quiz Challenge</h1>
+          <h2>High Scores</h2>
+          <div id="high-score-list"></div>
+          <button id="go-back">Go Back</button>
+          <button id="clear-high-scores">Clear High Scores</button>
           </div>
       </section>
       <!-- end of high score page -->
