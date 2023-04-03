@@ -33,9 +33,14 @@
             limit. Keep in mind that incorrect answers will penalise your score
             time by ten seconds!
           </p>
+          <div class="slider-container">
+            <label for="questions-slider" id="questions-label">Choose the number of questions in the quiz:</label>
+            <input type="range" min="5" max="28" value="10" class="slider" id="questions-slider">
+            <p id="questions-slider-value">10</p>
+          </div>
           <label>
             <input type="checkbox" name="show-correct-answer" value="yes" checked id="show-correct-answer">
-            Show correct answers if I get them wrong
+            Show the correct answer if I get a question wrong
           </label>
           <button id="start-button">Start Quiz</button>
         </div>
@@ -87,7 +92,8 @@
         <div class="page-element">
         <h1>Coding Quiz Challenge</h1>
         <h2>All done!</h2>
-        <p>Congratulations! Your final score is <span id="final-score"></span></p>
+        <p id="final-score-time"></p>
+        <p>You correctly answered <span id="final-score-answers"></span></p>
         <form id="high-score-form">
           <label for="initials">Enter your initials:</label>
           <input type="text" id="initials" name="initials" id="enter-initials" />

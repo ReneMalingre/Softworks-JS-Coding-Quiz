@@ -17,6 +17,7 @@
   --quiz-answer-background-color: rgb(98 171 232);
   --page-element-shadow: 2px 2px 10px 0 rgba(255 255 255 / 50%);
   --accent-color-1: rgb(0 61 107);
+  --accent-color-2:rgb(98 171 232);
 }
 
 /* allow percentage-based heights, use standard font-size to word in rems */
@@ -88,6 +89,11 @@ section {
   box-shadow: var(--page-element-shadow);
 }
 
+h1, h2 {
+  text-align: center;
+  margin: 0.25rem;
+}
+
 /* --------- Start Page ----------- */
 #start-page {
   display: block;
@@ -97,12 +103,54 @@ section {
   font-size: 1.1rem;
   font-weight: 500;
   margin: 1rem 0;
+  text-align: center;
 }
 
 #start-intro label {
   font-size: 0.9rem;
   font-weight: 500;
   margin: 1rem 0;
+}
+
+.slider-container {
+  display:flex;
+  flex-direction: column;
+  text-align: center;
+}
+
+#questions-label {
+  margin: 0.5em !important;
+}
+
+#questions-slider-value {
+  margin: 0.5em !important;
+}
+
+input[type="range"] {
+  margin: 0;
+  width: 100%;
+  height: 20px;
+  background-color: var(--accent-color-2);
+  border-radius: 10px;
+  -webkit-appearance: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--accent-color-1);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background-color: var(--accent-color-1);
+  cursor: pointer;
 }
 
 #show-correct-answer {
@@ -180,6 +228,7 @@ button {
 /* --------- End Page ---------------- */
 #quiz-over-page {
   display: block;
+  text-align: center;
 }
 
 #quiz-over-page h2 {

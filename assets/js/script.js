@@ -5,6 +5,9 @@
 var startQuizButton=document.getElementById('start-button');
 startQuizButton.addEventListener('click', startTheCodingQuiz);
 
+var questionsSlider = document.getElementById('questions-slider');
+questionsSlider.addEventListener('input', selectNumberOfQuestions);
+
 // create custom events that are dispatched from the quiz timer and quiz controller
 // notifying that the quiz has finished for further actions to be taken
 const TimerFinishedEvent = new Event('quizTimerFinished');
@@ -22,7 +25,7 @@ document.addEventListener('quizQuestionAnswered', quizQuestionAnsweredHandler);
 var answerDivs = document.getElementById('quiz-answers');
 answerDivs.addEventListener('click', answerSelected);
 
-// Detect if the user has pressed (released) a key on the keyboard 
+// Detect if the user has pressed (released) a key on the keyboard
 // to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
 document.addEventListener('keyup', quizKeyUp);
 
@@ -37,11 +40,14 @@ document.addEventListener('keyup', quizKeyUp);
 class QuizController {
   constructor(timePerQuestion) {
     this.timePerQuestion = timePerQuestion;
-    this.quizTotalTime = 0;
-    this.currentQuestionIndex = 0;
-    this.questions = new QuizQuestions();
-    this.quizIsRunning = false;
-    this.showCorrectAnswer = false;
+    this.quizTotalTime = 0; // amount of time available at the start
+    this.currentQuestionIndex = 0; // which question index is being asked
+    this.questions = new QuizQuestions(); // the available quiz questions
+    this.quizIsRunning = false; // flag indicating if the quiz is currently running
+    this.showCorrectAnswer = false; // flag indicating if the user wants to see the correct answer after they answer incorrectly
+    this.finalTimerScore = 0; // the amount of time left at the conclusion of the quiz
+    this.selectedQuestionsForQuiz = 0; // the user-selected number of questions to be asked in the quiz
+    this.questionsAskedSoFar = 0; // the number of questions the user has been asked so far in the quiz
   }
 
   startQuiz() {
@@ -52,12 +58,18 @@ class QuizController {
     this.raiseEventQuestionAnswered();
 
     // calculate the time remaining based on the number of questions and the time per question
-    this.quizTotalTime = this.timePerQuestion * this.questions.questions.length;
+    this.quizTotalTime = this.timePerQuestion * parseInt(this.selectedQuestionsForQuiz);
   }
 
   showQuestion() {
   // show the next question
-    const question = this.questions.questions[this.currentQuestionIndex];
+  // iterate the number of questions that have been asked
+    this.questionsAskedSoFar++;
+    // choose the index of the question to display (random)
+    this.chooseNextQuestion();
+    // the question with the randomly chosen index is displayed and flag set so it is not chosen again
+    const question = this.currentQuestion();
+    question.hasBeenAsked = true;
     document.getElementById('question').innerHTML = question.question;
     const answerIDs = ['A', 'B', 'C', 'D'];
     let quizAnswer;
@@ -68,16 +80,29 @@ class QuizController {
     return;
   }
 
+  // choose which question to ask and store the index
+  chooseNextQuestion() {
+    const totalQuestions = this.questions.totalQuestions();
+    let randomIndex;
+    while (true) {
+      randomIndex = Math.floor(Math.random() * totalQuestions);
+      if (!this.questions.questions[randomIndex].hasBeenAsked) {
+        // found an unanswered question
+        this.currentQuestionIndex = randomIndex;
+        return;
+      }
+    }
+  }
+
   answerQuestion(answerIdentifier) {
     if (this.quizIsRunning) {
       // choose the answer to this question
-      console.log(this.currentQuestionIndex);
       const displayedQuestion = this.currentQuestion();
       displayedQuestion.storeAnswerByIdentifier(answerIdentifier);
 
       // check if the answer is correct and feedback
       const feedbackElement = document.getElementById('quiz-feedback');
-      if (displayedQuestion.userSelection.isCorrect) {
+      if (displayedQuestion.answerIsCorrect()) {
         // if so, let the user know
         feedbackElement.innerHTML = 'Correct!';
         feedbackElement.style.color = 'green';
@@ -90,10 +115,9 @@ class QuizController {
         feedbackElement.style.fontWeight = '600';
         quizTimer.penaliseForWrongAnswer(secondsPenalty);
       };
-      // move to the next question
-      this.currentQuestionIndex++;
 
-      if (this.currentQuestionIndex > this.questions.questions.length-1) {
+      // move to the next question unless have already asked enough questions
+      if (this.questionsAskedSoFar >= this.selectedQuestionsForQuiz) {
         // end the quiz as have run out of questions
         document.dispatchEvent(EndedQuestionsEvent);
       } else {
@@ -107,8 +131,8 @@ class QuizController {
   raiseEventQuestionAnswered() {
     const eventQuestionAnswered = new CustomEvent('quizQuestionAnswered',
         {detail: {
-          totalQuestions: this.questions.questions.length,
-          questionsAsked: this.currentQuestionIndex + 1,
+          totalQuestions: this.selectedQuestionsForQuiz,
+          questionsAsked: this.questionsAskedSoFar,
         },
         });
     document.dispatchEvent(eventQuestionAnswered);
@@ -116,26 +140,22 @@ class QuizController {
   }
 
   currentQuestion() {
-    if (this.currentQuestionIndex > this.questions.questions.length-1) {
-      return null;
-    } else {
-      return this.questions.questions[this.currentQuestionIndex];
-    }
+    return this.questions.questions[this.currentQuestionIndex];
   }
 
   endQuiz() {
     // end the quiz
     this.quizIsRunning = false;
 
-    // calculate and the score
-    return this.userScore();
+    // calculate scores
+    return this.answersCorrectScore();
   }
 
-  userScore() {
+  answersCorrectScore() {
   // calculate the score
     let score=0;
     for (const question of this.questions.questions) {
-      if (question.questionHasBeenAnswered && question.userSelection.isCorrect) {
+      if (question.questionHasBeenAnswered && question.answerIsCorrect()) {
         score++;
       };
     };
@@ -149,9 +169,13 @@ class QuizController {
   resetQuiz() {
     this.timeRemaining = 0; // the time remaining in seconds
     this.currentQuestionIndex = 0;
+    this.quizIsRunning = true;
+    this.finalTimerScore = 0;
+    this.questionsAskedSoFar=0;
+
+    // brute-force and inelegant resetting of state of the QuizQuestions🤷‍♀️
     this.questions = new QuizQuestions();
     this.loadInbuiltQuestions();
-    this.quizIsRunning = true;
     return;
   }
 
@@ -443,6 +467,7 @@ class QuizQuestion {
     this.question = question;
     this.answers = answers;
     this.userSelection = new QuestionAnswer('', '', false); // the user's selected answer
+    this.hasBeenAsked = false; // flag set when the question has been displayed to the user
   }
   /**
    * Stores the user's selected answer
@@ -519,21 +544,7 @@ class QuizQuestions {
     this.questions.push(question);
     return;
   }
-
-  /**
-   * returns the question at the specified index in the collection of questions
-   * @param {number} index - the index of the question to return
-   * @return {QuizQuestion} - the question at the specified index
-   */
-  getQuestion(index) {
-    return this.questions[index];
-  }
-
-  /**
-   * returns the number of questions in the collection of questions
-   * @return {number} - the number of questions in the collection of questions
-   */
-  getQuestionCount() {
+  totalQuestions() {
     return this.questions.length;
   }
 }
@@ -615,7 +626,7 @@ class QuizTimer {
   constructor() {
     this.timerInterval = 1000;
     this.timeLeft= 0;
-    this.quizTimer = null;
+    this.quizCountdownTimer = null;
     this.startingTime = 0;
   }
 
@@ -626,22 +637,26 @@ class QuizTimer {
       return 0;
     }
     // return the time left in seconds (nearest second)
-    return Math.round(this.timeLeft/1000);
+    return this.timeLeft;
   }
 
   penaliseForWrongAnswer(penalty) {
     this.timeLeft -= penalty;
+    // check to see if the time has run out
     if (this.timeLeft <= 0) {
-      // stop the timer
+      // yep, run out of time
+      // so stop the timer
       this.stopQuizTimer();
-      // raise the timer run out event
+      // raise the timer run out event to end the quiz
       document.dispatchEvent(TimerFinishedEvent);
     } else {
-      // raise the timer tick event to refresh screen, etc
+      // raise the timer tick event to refresh the UI with the new time remaining
       this.raiseEventTimerTick();
     }
   }
 
+  // this method raises a custom event that is handled outside the
+  // class, and is used to update the countdown page elements
   raiseEventTimerTick() {
     const timerTickEvent = new CustomEvent('quizTimerTick',
         {detail: {
@@ -653,20 +668,23 @@ class QuizTimer {
     return;
   }
 
+  // called at the start of the quiz to begin the countdown
+  // parameter is the beginning quiz time remaining, calculated
+  // by the calling function based on the number of questions
   startQuizTimer(runForSeconds) {
     this.startingTime=runForSeconds;
     this.timeLeft = runForSeconds;
-    // update the UI at the start of the timer
+    // update the UI at the start of the timer, dispatches a custom event
     this.raiseEventTimerTick();
 
     // start the timer and set the function to run every interval defined by this.timerInterval
-    this.quizTimer = setInterval(() => {
+    this.quizCountdownTimer = setInterval(() => {
       this.timeLeft--;
       if (this.timeLeft <= 0) {
-        // stop the timer
+        // the time has run out; the quiz needs to be ended
+        // stop the timer immediately
         this.stopQuizTimer();
-        // raise the timer run out event
-        console.log('Timer finished');
+        // dispatch the timer run out custom event to update the UI and record the final scores
         document.dispatchEvent(TimerFinishedEvent);
       } else {
         // raise the timer tick event to refresh progress bar, etc
@@ -676,8 +694,9 @@ class QuizTimer {
     return;
   }
 
+  // stop the timer
   stopQuizTimer() {
-    clearInterval(this.quizTimer);
+    clearInterval(this.quizCountdownTimer);
   }
 }
 
@@ -695,7 +714,7 @@ class QuizTimer {
 
 // set the number of seconds per question and the penalty that reduces the time available
 // if the user selects an incorrect answer
-const secondsPerQuestion = 8;
+const secondsPerQuestion = 10;
 const secondsPenalty = 10;
 
 // create a new quiz timer with the quizTimerElement to dispatch events to
@@ -707,8 +726,11 @@ const quizController = new QuizController(secondsPerQuestion);
 // This function starts the quiz, and it is called by the user clicking the "Start Quz" button
 function startTheCodingQuiz() {
   // get the user options
-  // see if user wants the correct answer to be shown if they get it wrong
-  quizController.showCorrectAnswer= document.getElementById('show-correct-answer').checked;
+  // see if user wants the correct answer to be shown if they get it wrong from the checkbox
+  quizController.showCorrectAnswer = document.getElementById('show-correct-answer').checked;
+
+  // get the number of questions the user would like to answer from the range slider
+  quizController.selectedQuestionsForQuiz = document.getElementById('questions-slider').value;
 
   // ensure the UI for the answers is reset
   resetAnswerElements('block');
@@ -731,26 +753,40 @@ function startTheCodingQuiz() {
 }
 
 
-
 // this is a helper function to tell the QuizController and the QuizTimer that the quiz has ended
 // either by running out of questions or the timer running out
 function stopQuiz() {
   // end the quiz:
   // disallow any more answers
-  // stop the timer
   quizController.endQuiz();
+
+  // record the timer score
+  quizController.finalTimerScore = quizTimer.getSecondsLeft();
+
+  // stop the timer
   quizTimer.stopQuizTimer();
 }
 
-// this is a helper function to move to webpage to the next step, which is the finished quiz page
+// Hide the Quiz screen, show the score/finished quiz screen
 function showFinishedPage() {
   // show the quiz finished page
   document.getElementById('quiz-page').style.display = 'none';
   document.getElementById('quiz-over-page').style.display = 'block';
-  // show the score
-  document.getElementById('final-score').innerHTML = quizController.userScore();
-}
+  // show the scores
+  if (quizController.finalTimerScore == 0) {
+    document.getElementById('final-score-time').textContent = 'Bad Luck! You ran out of time and scored zero. Try again soon!';
+  } else {
+    document.getElementById('final-score-time').textContent = 'Congratulations! You scored ' + quizController.finalTimerScore + '!';
+  }
+  let answerScore;
+  if (quizController.questionsAskedSoFar < quizController.selectedQuestionsForQuiz ) {
+    answerScore = quizController.answersCorrectScore() + ' out of ' + quizController.questionsAskedSoFar + ' questions asked, out of a possible ' + quizController.selectedQuestionsForQuiz + ' questions.';
+  } else {
+    answerScore = quizController.answersCorrectScore() + ' out of ' + quizController.selectedQuestionsForQuiz + ' questions.';
+  };
 
+  document.getElementById('final-score-answers').innerHTML = answerScore;
+}
 
 // tidy up the UI after the last question has been answered
 // and before the quiz has started to ensure no old data or unwanted formatting is shown
@@ -765,9 +801,17 @@ function resetAnswerElements(displayType) {
 
 
 // ---------- Event Handlers ----------
+// update the chosen number of questions by the range slider changing
+function selectNumberOfQuestions() {
+  document.getElementById('questions-slider-value').textContent = questionsSlider.value;
+  return;
+}
+
+// user changes the slider to choose the number of questions
 // this is called when the user clicks on an answer
 // (actually triggered by the container div for the answer, using bubbling)
-function answerSelected(event) {;
+function answerSelected(event) {
+  ;
   // only respond if the user clicks one of the answers (<p> elements)
   if (event.target.nodeName === 'P') {
     // get the id of the element
@@ -800,8 +844,10 @@ function quizKeyUp(event) {
 // This event handles the custom event dispatched by the QuizTimer when the quiz has ended due to running out of time
 // async is used to allow the quiz to wait for a delay before showing the finished page
 async function quizTimerFinished() {
-  // end the quiz
+  // end the quiz, and determine the score
   stopQuiz();
+
+  // update the ui indicating that the timer is up
   document.getElementById('timer').innerHTML = 'time\'s up!';
 
   // wait a second before showing the finished page
@@ -810,6 +856,7 @@ async function quizTimerFinished() {
   // show the quiz finished page
   showFinishedPage();
 }
+
 // This event handles the custom event dispatched by the QuizController when the quiz has ended due to running out of questions
 // async is used to allow the quiz to wait for a delay before showing the finished page
 async function quizEndedQuestions() {
@@ -957,7 +1004,7 @@ function setProgressBar(elementID, elementParentID, countDownTextID, countDownPe
 
   // set the shadow of the timer bar to the calculated colour
   elementToStyle = document.getElementById(elementParentID);
-  elementToStyle.style.boxShadow=shadowStyle;
+  elementToStyle.style.boxShadow = shadowStyle;
 
   // set the colour of the timer text
   elementToStyle = document.getElementById(countDownTextID);
