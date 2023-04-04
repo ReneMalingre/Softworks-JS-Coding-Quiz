@@ -5,8 +5,32 @@
 var startQuizButton=document.getElementById('start-button');
 startQuizButton.addEventListener('click', startTheCodingQuiz);
 
+var showHighScoresButton=document.getElementById('high-scores-button');
+showHighScoresButton.addEventListener('click', showHighScores);
+
 var questionsSlider = document.getElementById('questions-slider');
 questionsSlider.addEventListener('input', selectNumberOfQuestions);
+
+var goBackButton = document.getElementById('go-back');
+goBackButton.addEventListener('click', goBackToStart);
+
+var goToStartButton = document.getElementById('go-back-to-start');
+goToStartButton.addEventListener('click', goBackToStart);
+
+var clearHighScoresButton = document.getElementById('clear-high-scores');
+clearHighScoresButton.addEventListener('click', clearHighScores);
+
+// Detect if the user has clicked on the quiz answers with their mouse
+var answerDivs = document.getElementById('quiz-answers');
+answerDivs.addEventListener('click', answerSelected);
+
+// Detect if the user has pressed (released) a key on the keyboard
+// to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
+document.addEventListener('keyup', quizKeyUp);
+
+// Detect if the user has clicked on the Submit initials button
+var submitInitials = document.getElementById('submit-initials');
+submitInitials.addEventListener('click', saveScore);
 
 // create custom events that are dispatched from the quiz timer and quiz controller
 // notifying that the quiz has finished for further actions to be taken
@@ -21,15 +45,7 @@ document.addEventListener('quizTimerTick', quizTimerTickHandler);
 // this one is used to update the quiz progress bar when the user answers a question
 document.addEventListener('quizQuestionAnswered', quizQuestionAnsweredHandler);
 
-// Detect if the user has clicked on the quiz answers with their mouse
-var answerDivs = document.getElementById('quiz-answers');
-answerDivs.addEventListener('click', answerSelected);
-
-// Detect if the user has pressed (released) a key on the keyboard
-// to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
-document.addEventListener('keyup', quizKeyUp);
-
-
+// =============================================================================
 // ----------  Class Definitions
 // ----------  QuizController Class
 /**
@@ -104,13 +120,13 @@ class QuizController {
       const feedbackElement = document.getElementById('quiz-feedback');
       if (displayedQuestion.answerIsCorrect()) {
         // if so, let the user know
-        feedbackElement.innerHTML = 'Correct!';
+        feedbackElement.textContent = 'Correct!';
         feedbackElement.style.color = 'green';
         feedbackElement.style.fontWeight = '500';
       } else {
         // if not, let the user know and penalise them
         const answerFeedback = 'Incorrect!' + (this.showCorrectAnswer ? ' The correct answer was: "' + displayedQuestion.getCorrectAnswer().answer + '"' : '');
-        feedbackElement.innerHTML = answerFeedback;
+        feedbackElement.textContent = answerFeedback;
         feedbackElement.style.color = 'red';
         feedbackElement.style.fontWeight = '600';
         quizTimer.penaliseForWrongAnswer(secondsPenalty);
@@ -129,10 +145,17 @@ class QuizController {
   }
 
   raiseEventQuestionAnswered() {
+    // raise an event to notify that a question has been answered
+    // it is shown after each question has been answered, and at the beginning of the quiz
+    // it is used to update the progress bar
+    // have to adjust for the first call to this function which is before the first question is asked
+    let questionsAskedSoFar = this.questionsAskedSoFar;
+    if (questionsAskedSoFar === 0) questionsAskedSoFar = 1;
+
     const eventQuestionAnswered = new CustomEvent('quizQuestionAnswered',
         {detail: {
           totalQuestions: this.selectedQuestionsForQuiz,
-          questionsAsked: this.questionsAskedSoFar,
+          questionsAsked: questionsAskedSoFar,
         },
         });
     document.dispatchEvent(eventQuestionAnswered);
@@ -176,6 +199,11 @@ class QuizController {
     // brute-force and inelegant resetting of state of the QuizQuestions🤷‍♀️
     this.questions = new QuizQuestions();
     this.loadInbuiltQuestions();
+
+    // reset UI elements
+    document.getElementById('quiz-feedback').innerHTML = '';
+    document.getElementById('enter-initials').value='';
+
     return;
   }
 
@@ -203,20 +231,7 @@ class QuizController {
     return returnKey;
   }
 
-  /**
-* adds the user's score to the high scores list, identified by their initials
-* @param {string} userInitials
-*/
-  storeHighScore(userInitials) {
-    // TODO: store the high score in local storage as a JSON object
-    if (useLocalStorage) {
-      // TODO: this is not functional yet, just playing around with JSON stuff
-      // store the high score in localStorage
-      const highScores = JSON.parse(localStorage.getItem('highScores')) || [];
-      highScores.push({initials: userInitials, score: this.score});
-      localStorage.setItem('highScores', JSON.stringify(highScores));
-    }
-  }
+
   /**
  * Loads the inbuilt questions into the quiz
  * @return {void}
@@ -649,10 +664,13 @@ class QuizTimer {
       this.stopQuizTimer();
       // raise the timer run out event to end the quiz
       document.dispatchEvent(TimerFinishedEvent);
+      // show the timer bar after time has run out
+      this.raiseEventTimerTick();
     } else {
       // raise the timer tick event to refresh the UI with the new time remaining
       this.raiseEventTimerTick();
     }
+    return;
   }
 
   // this method raises a custom event that is handled outside the
@@ -700,6 +718,111 @@ class QuizTimer {
   }
 }
 
+// ---------- HighScore Class ----------
+class HighScore {
+  constructor(questionsInQuiz, userInitials, timerScore, correctScore) {
+    this.questionsInQuiz = questionsInQuiz;
+    this.userInitials = userInitials;
+    this.timerScore = timerScore;
+    this.correctScore = correctScore;
+    this.isLatestHighScore = false;
+  }
+}
+
+// ---------- HighScoreList Class ----------
+class HighScoreList {
+  constructor() {
+    this.highScores = [];
+    this.loadHighScoresFromLocalStorage();
+  }
+  addHighScore(highScore) {
+    // set every high score to not be the latest high score
+    this.highScores.forEach((highScore) => {
+      highScore.isLatestHighScore = false;
+    });
+    // set the new high score to be the latest high score
+    highScore.isLatestHighScore = true;
+
+    // add the high score to the array
+    this.highScores.push(highScore);
+
+    // sort the array
+    this.sortHighScores();
+
+    // save the array to local storage
+    this.saveHighScoresToLocalStorage();
+  }
+
+  saveHighScoresToLocalStorage() {
+    // save the high scores to local storage
+    localStorage.setItem('highScores', JSON.stringify(this.highScores));
+  }
+
+  loadHighScoresFromLocalStorage() {
+    // load the high scores from local storage
+    const highScores = JSON.parse(localStorage.getItem('highScores'));
+    if (highScores) {
+      this.highScores = highScores;
+    } else {
+      this.highScores = [];
+    }
+  }
+
+  clearHighScores() {
+  // clear the high scores from local storage
+    localStorage.removeItem('highScores');
+    // clear the high scores from the array
+    this.highScores = [];
+  }
+
+  // Sort the high scores by the number of questions in the quiz, then by the timer score, then by the correct score
+  sortHighScores() {
+    this.highScores.sort((a, b) => {
+      // parseInt probably not needed, but just in case the values are strings
+      return parseInt(b.questionsInQuiz) - parseInt(a.questionsInQuiz) || parseInt(b.timerScore) - parseInt(a.timerScore) || parseInt(b.correctScore) - parseInt(a.correctScore);
+    });
+  };
+
+  displayHighScores() {
+    // show the high scores
+    const highScoreListElement = document.getElementById('high-score-list');
+    const highScoreDescriptionElement = document.getElementById('high-scores-description');
+    // clear the high score list
+    highScoreListElement.innerHTML = '';
+    if (this.highScores.length === 0) {
+      // no high scores, so display a message
+      highScoreDescriptionElement.innerHTML ='There are no high scores yet.<br>Test yourself and be the first to get a high score!';
+      highScoreListElement.style.display = 'none';
+    } else {
+      highScoreDescriptionElement.textContent='Here are the high scores, with the latest entry highlighted:';
+      // add each high score to the list
+      let alternateColour = false;
+      let oldQuestionsTally = 0;
+      for (let i = 0; i < this.highScores.length; i++) {
+        const highScore = this.highScores[i];
+        if (highScore.questionsInQuiz !== oldQuestionsTally) {
+          alternateColour = !alternateColour;
+          oldQuestionsTally = highScore.questionsInQuiz;
+        }
+        const highScoreElement = document.createElement('li');
+        highScoreElement.className = 'high-score';
+        if (alternateColour) {
+          highScoreElement.className += ' list-item-colour-1';
+        } else {
+          highScoreElement.className += ' list-item-colour-2';
+        }
+        if (highScore.isLatestHighScore) {
+          highScoreElement.className += ' latest-high-score';
+        }
+        highScoreElement.textContent = `${highScore.questionsInQuiz} questions: ${highScore.userInitials}, ${highScore.timerScore} seconds, ${highScore.correctScore} correct`;
+        highScoreListElement.appendChild(highScoreElement);
+      };
+      highScoreListElement.style.display = 'block';
+    }
+  }
+}
+
+
 // ---------- End QuizTimer Class ----------
 
 // ---------------------------------------------------------
@@ -717,11 +840,14 @@ class QuizTimer {
 const secondsPerQuestion = 10;
 const secondsPenalty = 10;
 
+// create a new quiz controller that has all the quiz questions and rules
+const quizController = new QuizController(secondsPerQuestion);
+
 // create a new quiz timer with the quizTimerElement to dispatch events to
 const quizTimer = new QuizTimer();
 
-// create a new quiz controller that has all the quiz questions and rules
-const quizController = new QuizController(secondsPerQuestion);
+const quizHighScoreList = new HighScoreList();
+
 
 // This function starts the quiz, and it is called by the user clicking the "Start Quz" button
 function startTheCodingQuiz() {
@@ -769,23 +895,29 @@ function stopQuiz() {
 
 // Hide the Quiz screen, show the score/finished quiz screen
 function showFinishedPage() {
-  // show the quiz finished page
+  // hide the quiz UI, show the quiz finished UI
   document.getElementById('quiz-page').style.display = 'none';
   document.getElementById('quiz-over-page').style.display = 'block';
-  // show the scores
+  // show the scores: construct a message to display the score to the user
+  scoreMessageElement = document.getElementById('final-score-time');
   if (quizController.finalTimerScore == 0) {
-    document.getElementById('final-score-time').textContent = 'Bad Luck! You ran out of time and scored zero. Try again soon!';
+    scoreMessageElement.style.animation = 'none';
+    scoreMessageElement.textContent = 'Bad Luck! You ran out of time and scored zero. Try again soon!';
   } else {
-    document.getElementById('final-score-time').textContent = 'Congratulations! You scored ' + quizController.finalTimerScore + '!';
+    scoreMessageElement.style.animation = 'changecolor 1.5s linear infinite';
+    scoreMessageElement.textContent = 'Congratulations! You scored ' + quizController.finalTimerScore + '!';
   }
+  // show the number of questions answered correctly
   let answerScore;
   if (quizController.questionsAskedSoFar < quizController.selectedQuestionsForQuiz ) {
     answerScore = quizController.answersCorrectScore() + ' out of ' + quizController.questionsAskedSoFar + ' questions asked, out of a possible ' + quizController.selectedQuestionsForQuiz + ' questions.';
   } else {
     answerScore = quizController.answersCorrectScore() + ' out of ' + quizController.selectedQuestionsForQuiz + ' questions.';
   };
-
   document.getElementById('final-score-answers').innerHTML = answerScore;
+
+  // set the focus to the input box for the user initials
+  document.getElementById('enter-initials').focus();
 }
 
 // tidy up the UI after the last question has been answered
@@ -799,11 +931,10 @@ function resetAnswerElements(displayType) {
   });
 }
 
-
 // ---------- Event Handlers ----------
 // update the chosen number of questions by the range slider changing
 function selectNumberOfQuestions() {
-  document.getElementById('questions-slider-value').textContent = questionsSlider.value;
+  document.getElementById('questions-slider-value').textContent = questionsSlider.value + ' questions';
   return;
 }
 
@@ -811,7 +942,6 @@ function selectNumberOfQuestions() {
 // this is called when the user clicks on an answer
 // (actually triggered by the container div for the answer, using bubbling)
 function answerSelected(event) {
-  ;
   // only respond if the user clicks one of the answers (<p> elements)
   if (event.target.nodeName === 'P') {
     // get the id of the element
@@ -839,6 +969,60 @@ function quizKeyUp(event) {
   return;
 }
 
+// this is called when the user clicks one of the "Go Back" buttons
+function goBackToStart() {
+  // reset the quiz
+  quizController.resetQuiz();
+  // hide the high scores and show the start screen
+  document.getElementById('high-score-page').style.display = 'none';
+  document.getElementById('quiz-over-page').style.display = 'none';
+  document.getElementById('start-page').style.display = 'block';
+}
+
+function clearHighScores() {
+  if (confirm( 'Are you sure you want to clear the high scores?')) {
+  // clear the high scores from the high score list and localStorage
+    quizHighScoreList.clearHighScores();
+
+    // update the high scores display
+    showHighScores();
+  }
+}
+
+// save the user score
+function saveScore(event) {
+  // stop the form from submitting
+  event.preventDefault();
+  // get the user initials
+  let userInitials = document.getElementById('enter-initials').value;
+  if (!userInitials.trim().length==0) {
+    // trim the initials and convert to upper case
+    userInitials=userInitials.trim().toUpperCase();
+    // add the score to the high score list
+    quizHighScoreList.addHighScore(new HighScore( quizController.selectedQuestionsForQuiz, userInitials, quizController.finalTimerScore, quizController.answersCorrectScore()));
+    // show the high scores
+    showHighScores();
+  } else {
+    alert('Please enter your initials');
+  }
+}
+
+function showHighScores() {
+  // hide the quiz start page
+  document.getElementById('start-page').style.display = 'none';
+  // hide the quiz finished page
+  document.getElementById('quiz-over-page').style.display = 'none';
+  // show the high scores page
+  document.getElementById('high-score-page').style.display = 'block';
+  // show the high scores
+  quizHighScoreList.displayHighScores();
+  // hide or show the clear high scores button
+  if (quizHighScoreList.highScores.length == 0) {
+    clearHighScoresButton.style.display = 'none';
+  } else {
+    clearHighScoresButton.style.display = 'block';
+  }
+}
 
 // ---------- Custom Event Handlers ----------
 // This event handles the custom event dispatched by the QuizTimer when the quiz has ended due to running out of time
@@ -848,7 +1032,7 @@ async function quizTimerFinished() {
   stopQuiz();
 
   // update the ui indicating that the timer is up
-  document.getElementById('timer').innerHTML = 'time\'s up!';
+  document.getElementById('timer').innerHTML = 'Time\'s up!';
 
   // wait a second before showing the finished page
   await delay(1000);
@@ -869,11 +1053,8 @@ async function quizEndedQuestions() {
   document.getElementById('question').textContent = '';
   resetAnswerElements('none');
 
-  // show a message that the quiz has ended
-  document.getElementById('timer').innerHTML = 'All done!';
-
   // delay to show the result of the last answer
-  await delay(2000);
+  await delay(1500);
 
   // show the quiz finished page
   showFinishedPage();
@@ -882,12 +1063,22 @@ async function quizEndedQuestions() {
 // handles the dispatched event from the quiz countdown timer
 function quizTimerTickHandler(event) {
   // get the details of the event
-  const timeLeft = parseFloat(event.detail.timeLeft);
+  let timeLeft = parseFloat(event.detail.timeLeft);
+  if (timeLeft < 0) {
+    timeLeft = 0;
+  };
+
   const startingTime = parseFloat(event.detail.startingTime);
   // calculate the percentage of time left
   const percentageLeft = Math.round(((startingTime- timeLeft)/startingTime)*100);
+
   // update the timer display
-  document.getElementById('timer').innerHTML = quizTimer.timeLeft;
+  if (timeLeft == 0) {
+    document.getElementById('timer').innerHTML ='Time\'s up!';
+  } else {
+    document.getElementById('timer').innerHTML = timeLeft;
+  }
+
   // update the timer progress bar
   setTimeProgressBar(percentageLeft);
 }
@@ -906,46 +1097,13 @@ function quizQuestionAnsweredHandler(event) {
 }
 // ---------- End of Custom Event Handlers ----------
 
-// ---------- localStorage Functions
-// See if localStorage is available to use
-const useLocalStorage = storageAvailable('localStorage');
-
-// see if the storage type is supported and available
-// credit: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
-function storageAvailable(type) {
-  let storage;
-  try {
-    storage = window[type];
-    const x = '__storage_test__';
-    storage.setItem(x, x);
-    storage.removeItem(x);
-    return true;
-  } catch (e) {
-    return (
-      e instanceof DOMException &&
-        // everything except Firefox
-        (e.code === 22 ||
-          // Firefox
-          e.code === 1014 ||
-          // test name field too, because code might not be present
-          // everything except Firefox
-          e.name === 'QuotaExceededError' ||
-          // Firefox
-          e.name === 'NS_ERROR_DOM_QUOTA_REACHED') &&
-        // acknowledge QuotaExceededError only if there's something already stored
-        storage &&
-        storage.length !== 0
-    );
-  }
-}
-// ----------  End of localStorage Functions
-
 // ---------- Helper functions ----------
 function delay(milliseconds) {
   return new Promise((resolve) => {
     setTimeout(resolve, milliseconds);
   });
 }
+
 // ---------- End of Helper functions ----------
 
 // ---------- Progress Bar Functions

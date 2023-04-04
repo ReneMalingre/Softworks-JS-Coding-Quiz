@@ -13,18 +13,32 @@
   --window-background-color: #333;
   --default-text-color: #333;
   --page-background-color: lightblue;
-  --quiz-text-color: #333;
   --quiz-answer-background-color: rgb(98 171 232);
   --page-element-shadow: 2px 2px 10px 0 rgba(255 255 255 / 50%);
   --accent-color-1: rgb(0 61 107);
-  --accent-color-2:rgb(98 171 232);
+  --accent-color-2: rgb(98 171 232);
+  --main-button-background-color: rgb(0 61 107);
+  --main-button-text-color: #fff;
+  --main-button-hover-background-color: rgb(98 171 232);
+  --secondary-button-background-color: #fff;
+  --secondary-button-text-color: rgb(0 61 107);
+  --secondary-button-hover-background-color: rgb(98 171 232);
+  --high-score-group-1: #ddf1ff;
+  --high-score-group-2: #fefeff;
+  --progress-area-background-color: #333;
+  --progress-bar-background-color: #fff;
+  --progress-bar-box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.5);
+  --progress-bar-height: 20px;
+  --border-radius: 10px;
+
+  /* set font size in root so it can be used in rem units */
+  font-size: 14px;
 }
 
 /* allow percentage-based heights, use standard font-size to word in rems */
 html,
 body {
   height: 100%;
-  font-size: 16px;
   background-color: var(--window-background-color);
   color: var(--default-text-color);
 }
@@ -71,9 +85,9 @@ section {
   justify-content: center;
   align-items: center;
   height: 100%;
-  min-width: 300px;
-  max-width: 800px;
-  margin: 0 auto;
+  min-width: 250px;
+  max-width: 750px;
+  margin: 1rem auto;
 }
 
 .page-element {
@@ -82,16 +96,18 @@ section {
   justify-content: center;
   align-items: center;
   border-radius: 20px;
-  padding: 1rem 2rem;
+  padding: 0.5rem 0.75rem;
   background-color: var(--page-background-color);
   width: 100%;
-  margin-top: 1rem;
   box-shadow: var(--page-element-shadow);
 }
 
-h1, h2 {
+h1,
+h2,
+h3 {
   text-align: center;
   margin: 0.25rem;
+  color: var(--accent-color-1);
 }
 
 /* --------- Start Page ----------- */
@@ -113,26 +129,29 @@ h1, h2 {
 }
 
 .slider-container {
-  display:flex;
+  display: flex;
   flex-direction: column;
   text-align: center;
 }
 
 #questions-label {
   margin: 0.5em !important;
+  color: var(--accent-color-1);
 }
 
 #questions-slider-value {
   margin: 0.5em !important;
+  font-weight: 600 !important;
 }
 
 input[type="range"] {
   margin: 0;
   width: 100%;
   height: 20px;
-  background-color: var(--accent-color-2);
+  background-color: var(--secondary-button-background-color);
   border-radius: 10px;
   -webkit-appearance: none;
+  appearance: none;
 }
 
 input[type="range"]::-webkit-slider-thumb {
@@ -157,21 +176,51 @@ input[type="range"]::-moz-range-thumb {
   background: var(--page-background-color);
   accent-color: var(--page-background-color);
   margin-right: -1.25em;
+  color: var(--accent-color-1);
+}
+
+#checkbox-label {
+  color: var(--accent-color-1);
+  margin: 0.2rem !important;
 }
 
 #start-high-scores p {
   text-align: center;
 }
 
-button {
+.buttons-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+
+button,
+.main-button {
   font-size: 1.1rem;
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 10px;
   border: none;
-  background-color: #333;
-  color: #fff;
+  background-color: var(--main-button-background-color);
+  color: var(--main-button-text-color);
   margin: 1rem 0;
+}
+
+.secondary-button {
+  background-color: var(--secondary-button-background-color);
+  color: var(--secondary-button-text-color);
+  border: var(--secondary-button-text-color) solid 2px;
+}
+
+.main-button:hover {
+  background-color: var(--main-button-hover-background-color);
+}
+
+.secondary-button:hover {
+  background-color: var(--secondary-button-hover-background-color);
 }
 
 /* --------- End of Start Page ----------- */
@@ -185,8 +234,8 @@ button {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  align-items: flex-start;
-  width: 80%;
+  align-items: stretch;
+  width: 100%;
 }
 
 #quiz-question h2 {
@@ -219,6 +268,7 @@ button {
   text-align: left;
   margin-top: 1rem;
   padding-top: 0.5rem;
+  padding-left: 0.5rem;
   font-size: 1rem;
   font-weight: 500;
 }
@@ -227,7 +277,7 @@ button {
 
 /* --------- End Page ---------------- */
 #quiz-over-page {
-  display: block;
+  display: none;
   text-align: center;
 }
 
@@ -244,7 +294,7 @@ button {
   margin: 1rem 0;
 }
 
-#high-score-form {
+#initials-form {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -253,8 +303,14 @@ button {
   width: 80%;
 }
 
-input{
-  width:5em;
+#initials-form label {
+  font-size: 1.1rem;
+  font-weight: 500;
+  margin: 1rem 0;
+}
+
+input {
+  width: 5em;
   border-color: var(--default-text-color);
   outline: none;
   text-transform: uppercase;
@@ -265,4 +321,110 @@ input{
 /* --------- High Score Page ---------------- */
 #high-score-page {
   display: none;
+}
+
+#high-score-list {
+  list-style-type: none;
+}
+
+.high-score {
+  color: var(--accent-color-1);
+  font-size: 1rem;
+  padding: 2px 1rem;
+  font-weight: 500;
+  border-radius: 5px;
+  margin: 2px 0;
+  text-align: left;
+}
+
+.list-item-colour-1 {
+  background-color: var(--high-score-group-1);
+}
+
+.list-item-colour-2 {
+  background-color: var(--high-score-group-2);
+}
+
+.latest-high-score {
+  color: var(--main-button-text-color);
+  font-size: 1rem;
+  background-color: var(--main-button-background-color);
+  padding: 5px 1rem;
+  font-weight: 600;
+}
+
+@keyframes changecolor {
+  0% {
+    color: var(--accent-color-1);
+  }
+
+  50% {
+    color: var(--accent-color-2);
+  }
+
+  100% {
+    color: var(--accent-color-1);
+  }
+}
+
+/* Progress Bars */
+.progress-bars {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  background-color: var(--progress-area-background-color);
+  padding-bottom: 2rem;
+  border-radius: var(--border-radius);
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.progress-bars p {
+  text-align: center;
+  font-weight: 600;
+  padding-top: 0.7rem;
+  padding-bottom: 0.2rem;
+}
+
+.progress-bar {
+  width: 90%;
+  background-color: var(--progress-bar-background-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--progress-bar-box-shadow);
+  height: var(--progress-bar-height);
+}
+
+#timer-bar,
+#questions-bar {
+  width: 0%;
+  height: 20px;
+  background-color: red;
+  border-radius: var(--border-radius);
+  transition: width 0.8s linear;
+}
+
+#questions-bar {
+  transition: width 0.5s linear;
+}
+
+#questions-left,
+#timer {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+@media screen and (min-width: 550px) {
+  :root {
+    font-size: 16px;
+  }
+
+  .progress-bars {
+    width: 90%;
+  }
+
+  #quiz-question {
+    width: 80%;
+  }
 }
