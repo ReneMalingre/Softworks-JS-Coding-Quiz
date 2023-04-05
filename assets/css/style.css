@@ -27,7 +27,7 @@
   --high-score-group-2: #fefeff;
   --progress-area-background-color: #333;
   --progress-bar-background-color: #fff;
-  --progress-bar-box-shadow: 1px 1px 8px 0 rgba(0, 0, 0, 0.5);
+  --progress-bar-box-shadow: 1px 1px 8px 0 rgba(0 0 0 / 50%);
   --progress-bar-height: 20px;
   --border-radius: 10px;
 
