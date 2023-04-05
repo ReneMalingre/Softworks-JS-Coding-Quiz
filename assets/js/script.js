@@ -1,55 +1,10 @@
 // JavaScript Coding Quiz
 
-// ---------- Event Listeners ----------
-// Detect if the user has clicked on the start button to start the quiz
-var startQuizButton=document.getElementById('start-button');
-startQuizButton.addEventListener('click', startTheCodingQuiz);
-
-var showHighScoresButton=document.getElementById('high-scores-button');
-showHighScoresButton.addEventListener('click', showHighScores);
-
-var questionsSlider = document.getElementById('questions-slider');
-questionsSlider.addEventListener('input', selectNumberOfQuestions);
-
-var goBackButton = document.getElementById('go-back');
-goBackButton.addEventListener('click', goBackToStart);
-
-var goToStartButton = document.getElementById('go-back-to-start');
-goToStartButton.addEventListener('click', goBackToStart);
-
-var clearHighScoresButton = document.getElementById('clear-high-scores');
-clearHighScoresButton.addEventListener('click', clearHighScores);
-
-// Detect if the user has clicked on the quiz answers with their mouse
-var answerDivs = document.getElementById('quiz-answers');
-answerDivs.addEventListener('click', answerSelected);
-
-// Detect if the user has pressed (released) a key on the keyboard
-// to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
-document.addEventListener('keyup', quizKeyUp);
-
-// Detect if the user has clicked on the Submit initials button
-var submitInitials = document.getElementById('submit-initials');
-submitInitials.addEventListener('click', saveScore);
-
-// create custom events that are dispatched from the quiz timer and quiz controller
-// notifying that the quiz has finished for further actions to be taken
-const TimerFinishedEvent = new Event('quizTimerFinished');
-const EndedQuestionsEvent = new Event('quizEndedQuestions');
-document.addEventListener('quizTimerFinished', quizTimerFinished);
-document.addEventListener('quizEndedQuestions', quizEndedQuestions);
-
-// add event listeners for custom events
-// this one is used to update the timer display from the quiz timer
-document.addEventListener('quizTimerTick', quizTimerTickHandler);
-// this one is used to update the quiz progress bar when the user answers a question
-document.addEventListener('quizQuestionAnswered', quizQuestionAnsweredHandler);
-
 // =============================================================================
 // ----------  Class Definitions
 // ----------  QuizController Class
 /**
- * Represents the the rules and current state of the quiz
+ * Represents the quiz: holds the questions, runs the quiz rules and the current state of the quiz
  * @param {number} timePerQuestion - the time allowed per question in seconds
  * @class
  */
@@ -57,42 +12,50 @@ class QuizController {
   constructor(timePerQuestion) {
     this.timePerQuestion = timePerQuestion;
     this.quizTotalTime = 0; // amount of time available at the start
-    this.currentQuestionIndex = 0; // which question index is being asked
+    this.currentQuestionIndex = 0; // which question index is being asked at present
     this.questions = new QuizQuestions(); // the available quiz questions
     this.quizIsRunning = false; // flag indicating if the quiz is currently running
     this.showCorrectAnswer = false; // flag indicating if the user wants to see the correct answer after they answer incorrectly
-    this.finalTimerScore = 0; // the amount of time left at the conclusion of the quiz
+    this.finalTimerScore = 0; // the amount of time left remaining at the conclusion of the quiz (becomes the score)
     this.selectedQuestionsForQuiz = 0; // the user-selected number of questions to be asked in the quiz
     this.questionsAskedSoFar = 0; // the number of questions the user has been asked so far in the quiz
   }
 
   startQuiz() {
-  // reset the quiz, including loading/reloading the inbuilt questions
+  // reset the quiz state, including loading/reloading the inbuilt questions
+  // the quiz timer is handled by the quiz timer class outside of this class
     this.resetQuiz();
 
-    // update the progress bar
+    // update/reset the progress bar
     this.raiseEventQuestionAnswered();
 
     // calculate the time remaining based on the number of questions and the time per question
     this.quizTotalTime = this.timePerQuestion * parseInt(this.selectedQuestionsForQuiz);
+
+    return;
   }
 
   showQuestion() {
   // show the next question
-  // iterate the number of questions that have been asked
+
+    // iterate the number of questions that have been asked
     this.questionsAskedSoFar++;
-    // choose the index of the question to display (random)
+
+    // choose the index of the question to display (random, but ensures no duplicate questions)
     this.chooseNextQuestion();
-    // the question with the randomly chosen index is displayed and flag set so it is not chosen again
+
+    // get the question with the randomly chosen index and flag set so it is not chosen again
     const question = this.currentQuestion();
     question.hasBeenAsked = true;
+    // display the question and the answers
     document.getElementById('question').innerHTML = question.question;
     const answerIDs = ['A', 'B', 'C', 'D'];
     let quizAnswer;
     for (const answerID of answerIDs) {
-      quizAnswer=question.answers.getAnswerByIdentifier(answerID);
+      quizAnswer = question.answers.getAnswerByIdentifier(answerID);
       document.getElementById('answer-' + answerID.toLowerCase()).textContent = answerID + ' ' + quizAnswer.answer;
     }
+
     return;
   }
 
@@ -100,6 +63,7 @@ class QuizController {
   chooseNextQuestion() {
     const totalQuestions = this.questions.totalQuestions();
     let randomIndex;
+    // loop until an unanswered question is found
     while (true) {
       randomIndex = Math.floor(Math.random() * totalQuestions);
       if (!this.questions.questions[randomIndex].hasBeenAsked) {
@@ -110,13 +74,15 @@ class QuizController {
     }
   }
 
+  // this function is called when the user has answered a question
+  // the input parameter is the identifier of the answer the user has chosen
   answerQuestion(answerIdentifier) {
     if (this.quizIsRunning) {
       // choose the answer to this question
       const displayedQuestion = this.currentQuestion();
       displayedQuestion.storeAnswerByIdentifier(answerIdentifier);
 
-      // check if the answer is correct and feedback
+      // check if the answer is correct and give feedback
       const feedbackElement = document.getElementById('quiz-feedback');
       if (displayedQuestion.answerIsCorrect()) {
         // if so, let the user know
@@ -129,6 +95,8 @@ class QuizController {
         feedbackElement.textContent = answerFeedback;
         feedbackElement.style.color = 'red';
         feedbackElement.style.fontWeight = '600';
+
+        // tell the timer class to penalise the user by the number of seconds set in the quiz settings
         quizTimer.penaliseForWrongAnswer(secondsPenalty);
       };
 
@@ -137,21 +105,23 @@ class QuizController {
         // end the quiz as have run out of questions
         document.dispatchEvent(EndedQuestionsEvent);
       } else {
+        // show the next question
         this.showQuestion();
-        // update the progress bar if there are more questions
+        // update the questions to come progress bar
         this.raiseEventQuestionAnswered();
       };
     }
   }
-
+  // Creates and dispatches a new custom event to notify that a question has been answered
   raiseEventQuestionAnswered() {
-    // raise an event to notify that a question has been answered
     // it is shown after each question has been answered, and at the beginning of the quiz
-    // it is used to update the progress bar
+    // it is used to update the questions to come progress bar
     // have to adjust for the first call to this function which is before the first question is asked
     let questionsAskedSoFar = this.questionsAskedSoFar;
-    if (questionsAskedSoFar === 0) questionsAskedSoFar = 1;
-
+    if (questionsAskedSoFar === 0) {
+      questionsAskedSoFar = 1;
+    };
+    // create the custom event and store the current state of the quiz inside it
     const eventQuestionAnswered = new CustomEvent('quizQuestionAnswered',
         {detail: {
           totalQuestions: this.selectedQuestionsForQuiz,
@@ -162,10 +132,12 @@ class QuizController {
     return;
   }
 
+  // returns the question object that is currently being asked
   currentQuestion() {
     return this.questions.questions[this.currentQuestionIndex];
   }
 
+  // set flag that the quiz is over, and return the number of questions answered correctly
   endQuiz() {
     // end the quiz
     this.quizIsRunning = false;
@@ -174,6 +146,7 @@ class QuizController {
     return this.answersCorrectScore();
   }
 
+  // calculate the number of questions answered correctly
   answersCorrectScore() {
   // calculate the score
     let score=0;
@@ -185,10 +158,7 @@ class QuizController {
     return score;
   }
 
-  /**
- * Resets the quiz to its initial state so it can be played again
- * @return {void}
- */
+  // Resets the quiz to its initial state so it can be played again
   resetQuiz() {
     this.timeRemaining = 0; // the time remaining in seconds
     this.currentQuestionIndex = 0;
@@ -207,9 +177,10 @@ class QuizController {
     return;
   }
 
+  // check if the key pressed is a valid key to answer the question and translate it
+  // to the correct answer identifier format
   validateKeyPress(keyPressCharacter) {
     // check if the key pressed is a valid key to answer the question
-    console.log('The key pressed was:', keyPressCharacter);
     keyPressCharacter = keyPressCharacter.toLowerCase();
     const keyTranslationPairs = [
       ['a', 'A'],
@@ -231,11 +202,7 @@ class QuizController {
     return returnKey;
   }
 
-
-  /**
- * Loads the inbuilt questions into the quiz
- * @return {void}
- */
+  // Loads the inbuilt questions into the quiz and resets other flags back to their initial state
   loadInbuiltQuestions() {
   // load inbuilt questions
   // ideally this would be loaded from a file or database but for now it's hard coded
@@ -470,6 +437,7 @@ class QuizController {
 // ----------  QuizQuestion Class
 /**
  * Represents a Quiz Question with a question, a collection of answers and the correct answer
+ * also stores the user's selected answer and a flag indicating whether the question has been asked
  * @class
  */
 class QuizQuestion {
@@ -617,16 +585,6 @@ class QuestionAnswers {
   }
 
   /**
-   * Adds an answer to the collection of answers
-   * @param {QuestionAnswer} answer - the possible answer to a quiz question to add to the collection
-   * @return {void}
-   */
-  addAnswer(answer) {
-    this.answers.push(answer);
-    return;
-  }
-
-  /**
    * Gets the correct answer from the collection of answers
    * @return {QuestionAnswer} - the correct answer
    */
@@ -637,6 +595,11 @@ class QuestionAnswers {
 
 // ---------------------------------------------------------
 // ---------- QuizTimer Class ----------
+// This class encapsulates the timer functionality for the quiz
+// This allows the timer to be started and stopped, and the time
+// remaining to be altered and retrieved, and for custom events
+// to be raised when the timer runs out or to update the UI with
+// the time remaining as the timer counts down.
 class QuizTimer {
   constructor() {
     this.timerInterval = 1000;
@@ -719,6 +682,7 @@ class QuizTimer {
 }
 
 // ---------- HighScore Class ----------
+// This class encapsulates an entry for the high score list
 class HighScore {
   constructor(questionsInQuiz, userInitials, timerScore, correctScore) {
     this.questionsInQuiz = questionsInQuiz;
@@ -730,6 +694,13 @@ class HighScore {
 }
 
 // ---------- HighScoreList Class ----------
+// This class encapsulates the data for a high score list
+// It is responsible for loading and saving the high score list
+// to local storage, and for adding new high scores to the list
+// and sorting the list by questions asked, time-remaining score, and
+// correct answers score.
+// It also has a method to clear the high score list from local storage
+// It also has a method to display the high score list in the UI
 class HighScoreList {
   constructor() {
     this.highScores = [];
@@ -821,8 +792,6 @@ class HighScoreList {
     }
   }
 }
-
-
 // ---------- End QuizTimer Class ----------
 
 // ---------------------------------------------------------
@@ -846,6 +815,7 @@ const quizController = new QuizController(secondsPerQuestion);
 // create a new quiz timer with the quizTimerElement to dispatch events to
 const quizTimer = new QuizTimer();
 
+// create a new high score list to store and display the high scores list
 const quizHighScoreList = new HighScoreList();
 
 
@@ -862,22 +832,23 @@ function startTheCodingQuiz() {
   resetAnswerElements('block');
 
   // start the quiz
-  console.log('start quiz');
   quizController.startQuiz();
 
   // start the timer
-  // console.log('start timer');
   quizTimer.startQuizTimer(quizController.quizTotalTime);
 
   // hide the start page
   document.getElementById('start-page').style.display = 'none';
 
+  // show the quiz page
   document.getElementById('quiz-page').style.display = 'block';
 
   // show the first question
   quizController.showQuestion();
-}
 
+  // the rest of the quiz is controlled by the event handlers in
+  // an event-oriented paradigm
+}
 
 // this is a helper function to tell the QuizController and the QuizTimer that the quiz has ended
 // either by running out of questions or the timer running out
@@ -898,6 +869,7 @@ function showFinishedPage() {
   // hide the quiz UI, show the quiz finished UI
   document.getElementById('quiz-page').style.display = 'none';
   document.getElementById('quiz-over-page').style.display = 'block';
+
   // show the scores: construct a message to display the score to the user
   scoreMessageElement = document.getElementById('final-score-time');
   if (quizController.finalTimerScore == 0) {
@@ -907,6 +879,7 @@ function showFinishedPage() {
     scoreMessageElement.style.animation = 'changecolor 1.5s linear infinite';
     scoreMessageElement.textContent = 'Congratulations! You scored ' + quizController.finalTimerScore + '!';
   }
+
   // show the number of questions answered correctly
   let answerScore;
   if (quizController.questionsAskedSoFar < quizController.selectedQuestionsForQuiz ) {
@@ -940,7 +913,7 @@ function selectNumberOfQuestions() {
 
 // user changes the slider to choose the number of questions
 // this is called when the user clicks on an answer
-// (actually triggered by the container div for the answer, using bubbling)
+// (actually triggered by the container div for the answer, using event propagation)
 function answerSelected(event) {
   // only respond if the user clicks one of the answers (<p> elements)
   if (event.target.nodeName === 'P') {
@@ -969,17 +942,20 @@ function quizKeyUp(event) {
   return;
 }
 
-// this is called when the user clicks one of the "Go Back" buttons
+// this is called when the user clicks one of the "Go Back" or "New Quiz" buttons
 function goBackToStart() {
   // reset the quiz
   quizController.resetQuiz();
-  // hide the high scores and show the start screen
+
+  // hide the high scores or end of quiz screens and show the start screen
   document.getElementById('high-score-page').style.display = 'none';
   document.getElementById('quiz-over-page').style.display = 'none';
   document.getElementById('start-page').style.display = 'block';
 }
 
+// this is called when the user clicks the "Clear High Scores" button
 function clearHighScores() {
+  // confirm that the user wants to clear the high scores
   if (confirm( 'Are you sure you want to clear the high scores?')) {
   // clear the high scores from the high score list and localStorage
     quizHighScoreList.clearHighScores();
@@ -993,20 +969,28 @@ function clearHighScores() {
 function saveScore(event) {
   // stop the form from submitting
   event.preventDefault();
+
   // get the user initials
   let userInitials = document.getElementById('enter-initials').value;
   if (!userInitials.trim().length==0) {
-    // trim the initials and convert to upper case
+    // trim the initials and convert to upper case, restrict to 5 characters
     userInitials=userInitials.trim().toUpperCase();
+    if (userInitials.length > 5) {
+      userInitials = userInitials.substring(0, 5);
+    }
+
     // add the score to the high score list
     quizHighScoreList.addHighScore(new HighScore( quizController.selectedQuestionsForQuiz, userInitials, quizController.finalTimerScore, quizController.answersCorrectScore()));
+
     // show the high scores
     showHighScores();
   } else {
+    // if the user has not entered any initials, show an alert
     alert('Please enter your initials');
   }
 }
 
+// show the high scores screen
 function showHighScores() {
   // hide the quiz start page
   document.getElementById('start-page').style.display = 'none';
@@ -1014,8 +998,10 @@ function showHighScores() {
   document.getElementById('quiz-over-page').style.display = 'none';
   // show the high scores page
   document.getElementById('high-score-page').style.display = 'block';
-  // show the high scores
+
+  // add the high scores to the page
   quizHighScoreList.displayHighScores();
+
   // hide or show the clear high scores button
   if (quizHighScoreList.highScores.length == 0) {
     clearHighScoresButton.style.display = 'none';
@@ -1067,10 +1053,10 @@ function quizTimerTickHandler(event) {
   if (timeLeft < 0) {
     timeLeft = 0;
   };
-
+  // get the starting total quiz time in float format
   const startingTime = parseFloat(event.detail.startingTime);
-  // calculate the percentage of time left
-  const percentageLeft = Math.round(((startingTime- timeLeft)/startingTime)*100);
+  // calculate the percentage of time used
+  const percentUsed = Math.round(((startingTime- timeLeft)/startingTime)*100);
 
   // update the timer display
   if (timeLeft == 0) {
@@ -1080,33 +1066,29 @@ function quizTimerTickHandler(event) {
   }
 
   // update the timer progress bar
-  setTimeProgressBar(percentageLeft);
+  setTimeProgressBar(percentUsed);
 }
 
+// handles the dispatched event from the quiz controller when a question is answered
 function quizQuestionAnsweredHandler(event) {
   // get the details of the event
   const questionTally = parseFloat( event.detail.totalQuestions);
   const questionsAsked = parseFloat( event.detail.questionsAsked);
+
   // calculate the percentage of questions left to be answered
   const percentageDone = Math.round((questionsAsked / questionTally)*100);
+
   // update the question progress info
   document.getElementById('question-number').innerHTML = `${questionsAsked} of ${questionTally}`;
   document.getElementById('questions-left').innerHTML = `${questionTally - questionsAsked}`;
+
   // update the progress bar
   setQuestionProgressBar(percentageDone);
 }
 // ---------- End of Custom Event Handlers ----------
 
-// ---------- Helper functions ----------
-function delay(milliseconds) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, milliseconds);
-  });
-}
-
-// ---------- End of Helper functions ----------
-
 // ---------- Progress Bar Functions
+// This function determines the formatting for the timer progress bar
 function setTimeProgressBar(timerPercentage) {
   // ensure the percentage is between 0 and 100
   timerPercentage=parseFloat(timerPercentage);
@@ -1131,6 +1113,7 @@ function setTimeProgressBar(timerPercentage) {
   return;
 }
 
+// This function determines the formatting for the question progress bar
 function setQuestionProgressBar(questionPercentage) {
   // ensure the percentage is between 0 and 100
   questionPercentage=parseFloat(questionPercentage);
@@ -1153,6 +1136,7 @@ function setQuestionProgressBar(questionPercentage) {
   return;
 }
 
+// This function sets the progress bar to the specified percentage and colour
 function setProgressBar(elementID, elementParentID, countDownTextID, countDownPercentage, startBarColour, endBarColour, countTextColour, shadowStyle) {
   let elementToStyle = document.getElementById(elementID);
   elementToStyle.style.backgroundColor = endBarColour;
@@ -1170,3 +1154,62 @@ function setProgressBar(elementID, elementParentID, countDownTextID, countDownPe
   return;
 }
 // ---------- End of Progress Bar Functions
+
+// ---------- Helper functions ----------
+function delay(milliseconds) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
+}
+// ---------- End of Helper functions ----------
+
+// ---------- Event Listeners ----------
+// Detect if the user has clicked on the start button to start the quiz
+var startQuizButton=document.getElementById('start-button');
+startQuizButton.addEventListener('click', startTheCodingQuiz);
+
+// Detect if the user has clicked on the high scores button to show the high scores
+var showHighScoresButton=document.getElementById('high-scores-button');
+showHighScoresButton.addEventListener('click', showHighScores);
+
+// Detect changes to the number of questions slider
+var questionsSlider = document.getElementById('questions-slider');
+questionsSlider.addEventListener('input', selectNumberOfQuestions);
+
+// Detect clicks on the 'Go Back' button to return to the start screen
+var goBackButton = document.getElementById('go-back');
+goBackButton.addEventListener('click', goBackToStart);
+
+// Detect clicks on the 'New Quiz' button to return to the start screen
+var goToStartButton = document.getElementById('go-back-to-start');
+goToStartButton.addEventListener('click', goBackToStart);
+
+// Detect clicks on the 'Clear High Scores' button to clear the high scores
+var clearHighScoresButton = document.getElementById('clear-high-scores');
+clearHighScoresButton.addEventListener('click', clearHighScores);
+
+// Detect if the user has clicked on the quiz answers with their mouse
+var answerDiv = document.getElementById('quiz-answers');
+answerDiv.addEventListener('click', answerSelected);
+
+// Detect if the user has pressed (released) a key on the keyboard
+// to allow keyboard answers (eg a, b, c, d, 1, 2, 3, 4)
+document.addEventListener('keyup', quizKeyUp);
+
+// Detect if the user has clicked on the Submit initials button
+var submitInitials = document.getElementById('submit-initials');
+submitInitials.addEventListener('click', saveScore);
+
+// create and listen for custom events that are dispatched from the quiz timer and quiz controller
+// notifying that the quiz has finished for further actions to be taken
+const TimerFinishedEvent = new Event('quizTimerFinished');
+const EndedQuestionsEvent = new Event('quizEndedQuestions');
+document.addEventListener('quizTimerFinished', quizTimerFinished);
+document.addEventListener('quizEndedQuestions', quizEndedQuestions);
+
+// add event listeners for other custom events
+// this one is used to update the timer display from the quiz timer
+document.addEventListener('quizTimerTick', quizTimerTickHandler);
+// this one is used to update the quiz progress bar when the user answers a question
+document.addEventListener('quizQuestionAnswered', quizQuestionAnsweredHandler);
+// ---------- End Event Listeners ----------

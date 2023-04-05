@@ -35,6 +35,7 @@
             after answering all the questions. Save your score by 
             submitting your initials after you finish the quiz.
           </p>
+          <!-- slider for number of questions -->
           <div class="slider-container">
             <label for="questions-slider" id="questions-label"
               >Choose the number of questions in the quiz:</label
@@ -49,6 +50,7 @@
             />
             <p id="questions-slider-value">15 questions</p>
           </div>
+          <!-- checkbox for option to show the correct answer if user wrong -->
           <label id="checkbox-label">
             <input
               type="checkbox"
@@ -59,6 +61,7 @@
             />
             Show the correct answer if the answer was wrong
           </label>
+          <!-- buttons to start the quiz or show high scores -->
           <div class="buttons-group">
             <button class="main-button" id="start-button">Start Quiz</button>
             <button class="secondary-button" id="high-scores-button">
@@ -79,6 +82,7 @@
             <div class="progress-bar" id="timer-bar-outline">
               <div id="timer-bar"></div>
             </div>
+            <!-- progress indicator, questions left display -->
             <p>Questions To Come: <span id="questions-left"></span></p>
             <div class="progress-bar" id="questions-bar-outline">
               <div id="questions-bar"></div>
@@ -97,7 +101,7 @@
               <p class="quiz-answer" id="answer-d"></p>
             </div>
           </div>
-          <!-- show correct or incorrect -->
+          <!-- show correct or incorrect in the footer of the page -->
           <div id="quiz-feedback"></div>
         </div>
       </section>
@@ -108,14 +112,18 @@
         <div class="page-element">
           <h1>Coding Quiz Challenge</h1>
           <h2>All done!</h2>
+          <!-- show the final score (which is the time left on the countdown)-->
           <h3 id="final-score-time"></h3>
+          <!-- show the answers correct score -->
           <p>You correctly answered <span id="final-score-answers"></span></p>
+          <!-- give the user an option to save their score by submitting their initials -->
           <form id="initials-form">
             <label for="enter-initials">Enter your initials:</label>
             <input type="text" id="enter-initials" name="initials" />
             <button class="main-button" id="submit-initials" type="submit">
               Submit
             </button>
+            <!-- give an option to bypass the saving and go back to the start -->
             <button class="secondary-button" id="go-back-to-start" type="button">New Quiz</button>
           </form>
         </div>
@@ -128,7 +136,9 @@
           <h1>Coding Quiz Challenge</h1>
           <h2>High Scores</h2>
           <h3 id="high-scores-description">Here are the top scores, with the latest entry highlighted:</h3>
+          <!-- display an high scores list here by the JS code -->
           <div><ul id="high-score-list"></ul></div>
+          <!-- give the user an option to go back to the start or clear the high scores -->
           <div class="buttons-group">
             <button class="main-button" id="go-back">Go Back</button>
             <button class="secondary-button" id="clear-high-scores">

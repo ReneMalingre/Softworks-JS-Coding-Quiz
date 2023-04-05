@@ -9,6 +9,7 @@
   padding: 0;
 }
 
+/* Define custom properties for colors and other values */
 :root {
   --window-background-color: #333;
   --default-text-color: #333;
@@ -43,11 +44,12 @@ body {
   color: var(--default-text-color);
 }
 
+/* set default font family */
 body {
   font-family: Montserrat, "Open Sans", sans-serif;
 }
 
-/* Improve media defaults  */
+/* Improve media defaults, css reset   */
 img,
 picture,
 video,
@@ -57,7 +59,7 @@ svg {
   max-width: 100%;
 }
 
-/* Remove built-in form typography styles  */
+/* Remove built-in form typography styles, css reset  */
 input,
 button,
 textarea,
@@ -65,7 +67,7 @@ select {
   font: inherit;
 }
 
-/* Avoid text overflows  */
+/* Avoid text overflows, css reset  */
 p,
 h1,
 h2,
@@ -79,6 +81,8 @@ h6 {
 /* ---- End Standard CSS Resets ---- */
 
 /* ---------- Standard Element Styling ---------- */
+
+/* default main container layout for all pages */
 section {
   display: flex;
   flex-direction: column;
@@ -90,6 +94,7 @@ section {
   margin: 1rem auto;
 }
 
+/* default styling for page screens */
 .page-element {
   display: flex;
   flex-direction: column;
@@ -102,6 +107,7 @@ section {
   box-shadow: var(--page-element-shadow);
 }
 
+/* default styling for headings */
 h1,
 h2,
 h3 {
@@ -111,6 +117,8 @@ h3 {
 }
 
 /* --------- Start Page ----------- */
+
+/* display this page on load */
 #start-page {
   display: block;
 }
@@ -128,6 +136,8 @@ h3 {
   margin: 1rem 0;
 }
 
+/* format the slider for the number of questions
+ --------------------------------------------- */
 .slider-container {
   display: flex;
   flex-direction: column;
@@ -142,12 +152,13 @@ h3 {
 #questions-slider-value {
   margin: 0.5em !important;
   font-weight: 600 !important;
+  color: var(--accent-color-1);
 }
 
 input[type="range"] {
   margin: 0;
   width: 100%;
-  height: 20px;
+  height: 10px;
   background-color: var(--secondary-button-background-color);
   border-radius: 10px;
   -webkit-appearance: none;
@@ -157,8 +168,8 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   background-color: var(--accent-color-1);
   cursor: pointer;
@@ -172,6 +183,29 @@ input[type="range"]::-moz-range-thumb {
   cursor: pointer;
 }
 
+/* Slider Thumb Focus Styles */
+
+/* Removes default focus */
+input[type="range"]:focus {
+  outline: none;
+}
+
+/* Adds focus styles */
+input[type="range"]:focus::-webkit-slider-thumb {
+  border: 1px solid var(--accent-color-2);
+  outline: 2px solid var(--accent-color-2);
+  outline-offset: 1px;
+}
+
+input[type="range"]:focus::-moz-range-thumb {
+  border: 1px solid var(--accent-color-2);
+  outline: 2px solid var(--accent-color-2);
+  outline-offset: 1px; /* 0.125rem;     */
+}
+
+/* -------------- End formatting of slider ------------- */
+
+/* format the checkbox for the show correct answers option */
 #show-correct-answer {
   background: var(--page-background-color);
   accent-color: var(--page-background-color);
@@ -184,10 +218,7 @@ input[type="range"]::-moz-range-thumb {
   margin: 0.2rem !important;
 }
 
-#start-high-scores p {
-  text-align: center;
-}
-
+/* layout the buttons */
 .buttons-group {
   display: flex;
   flex-direction: row;
@@ -197,6 +228,7 @@ input[type="range"]::-moz-range-thumb {
   gap: 1rem;
 }
 
+/* format the main buttons (applies on other pages, not just start) */
 button,
 .main-button {
   font-size: 1.1rem;
@@ -209,12 +241,14 @@ button,
   margin: 1rem 0;
 }
 
+/* format the secondary buttons (applies on other pages, not just start) */
 .secondary-button {
   background-color: var(--secondary-button-background-color);
   color: var(--secondary-button-text-color);
   border: var(--secondary-button-text-color) solid 2px;
 }
 
+/* format the hover state of the buttons */
 .main-button:hover {
   background-color: var(--main-button-hover-background-color);
 }
@@ -225,11 +259,13 @@ button,
 
 /* --------- End of Start Page ----------- */
 
-/* --------- Quiz Page ----------- */
+/* --------- Quiz Page ----------- 
+   hide this page on load */
 #quiz-page {
   display: none;
 }
 
+/* format the question */
 #quiz-question {
   display: flex;
   flex-direction: column;
@@ -249,6 +285,7 @@ button,
   margin: 0.6rem 0;
 }
 
+/* format the answers */
 .quiz-answer {
   font-size: 1.2rem;
   background-color: white;
@@ -275,7 +312,8 @@ button,
 
 /* --------- End Quiz Page ----------- */
 
-/* --------- End Page ---------------- */
+/* --------- End Page ----------------
+    hide this page on load */
 #quiz-over-page {
   display: none;
   text-align: center;
@@ -294,6 +332,7 @@ button,
   margin: 1rem 0;
 }
 
+/* format the  area to enter the user initials */
 #initials-form {
   display: flex;
   flex-direction: row;
@@ -309,6 +348,7 @@ button,
   margin: 1rem 0;
 }
 
+/* style the text input */
 input {
   width: 5em;
   border-color: var(--default-text-color);
@@ -318,15 +358,18 @@ input {
 
 /* --------- End End Page ----------- */
 
-/* --------- High Score Page ---------------- */
+/* --------- High Score Page ----------------
+    hide this page on load */
 #high-score-page {
   display: none;
 }
 
+/* format the high score list */
 #high-score-list {
   list-style-type: none;
 }
 
+/* high score list item */
 .high-score {
   color: var(--accent-color-1);
   font-size: 1rem;
@@ -345,6 +388,7 @@ input {
   background-color: var(--high-score-group-2);
 }
 
+/* format the latest entry onto the high score list */
 .latest-high-score {
   color: var(--main-button-text-color);
   font-size: 1rem;
@@ -353,6 +397,7 @@ input {
   font-weight: 600;
 }
 
+/* the very amazing animation on the score, lol 🎆 */
 @keyframes changecolor {
   0% {
     color: var(--accent-color-1);
@@ -377,7 +422,7 @@ input {
   background-color: var(--progress-area-background-color);
   padding-bottom: 2rem;
   border-radius: var(--border-radius);
-  color: #fff;
+  color: var(--main-button-text-color);
   margin-bottom: 1rem;
 }
 
@@ -396,25 +441,29 @@ input {
   height: var(--progress-bar-height);
 }
 
+/* format and smoothly transition the progress bars */
 #timer-bar,
 #questions-bar {
   width: 0%;
   height: 20px;
-  background-color: red;
   border-radius: var(--border-radius);
   transition: width 0.8s linear;
 }
 
+/* slide the questions progress bar more quickly */
 #questions-bar {
   transition: width 0.5s linear;
 }
 
+/* format the progress bar indicator text */
 #questions-left,
 #timer {
   font-size: 1.2rem;
   font-weight: 600;
 }
 
+/* media queries - thanks to flexboxes and other layout choices,
+   little needs to be done here for small and large screens to work well */
 @media screen and (min-width: 550px) {
   :root {
     font-size: 16px;
